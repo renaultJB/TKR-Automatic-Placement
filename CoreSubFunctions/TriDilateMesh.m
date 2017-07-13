@@ -1,6 +1,8 @@
 function [ TRout ] = TriDilateMesh( TRsup, TRin, nbElmts )
-%UNTITLED4 Summary of this function goes here
-%   Detailed explanation goes here
+% Dilate a triangulation TRin :
+%   add elements from TRsup triangulation that share an edge with  
+%   the border of TRin
+% Update TRin and Repeat the operation nbElmts times
 
 [~, ia ,ic] = intersect(TRsup.Points,TRin.Points,'rows','stable');
 

@@ -1,7 +1,6 @@
 function [ TRout ] = TriConnectedPatch( TR, PtsInitial  )
 %TriConnectedPatch : Find the connected mesh (elements sharing at least an
-%edge) starting from a given point (not necessarily lying on the mesh)
-%   Detailed explanation goes here
+% edge) starting from a given point (not necessarily lying on the mesh)
 
 NodeInitial = TR.nearestNeighbor(PtsInitial);
 NodeInitial = unique(NodeInitial);

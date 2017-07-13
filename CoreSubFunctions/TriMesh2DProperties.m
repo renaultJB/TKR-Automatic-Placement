@@ -1,5 +1,10 @@
 function [ Properties ] = TriMesh2DProperties( TR )
-%UNTITLED2 Summary of this function goes here
+%Extract some properties of the triangulation TR :
+%   Area of each elements (Triangles)
+%   Total area of the Mesh
+%   Barycenter
+%   Mean orientation
+%   Center on the mesh
 %   Detailed explanation goes here
 
 Properties.Name = inputname(1);
@@ -10,6 +15,7 @@ Properties.Area = 0.5*sum(cross(TR.Points(TR.ConnectivityList(:,2),:)-...
 
 Properties.TotalArea = sum(Properties.Area);
 
+% Barycenter, the triangle are weighted by their area
 Properties.Center = sum(TR.incenter.*repmat(Properties.Area,1,3),1)/Properties.TotalArea;
 
 

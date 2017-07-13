@@ -1,6 +1,6 @@
 function [ CovM ] = TriCovMatrix( TR )
-%Compute the Cov matrix of a triangulation by taking the triangle
-%center and weighting them by their corresponding area
+%Compute the covariance matrix of a triangulation by taking the triangle
+% centers and weighting them by their corresponding area
 
 Ppt = TriMesh2DProperties(TR);
 

@@ -1,6 +1,5 @@
 function [ TRout ] = TriDifferenceMesh( TR1 , TR2 )
 %Boolean difference between original mesh TR1 and another mesh TR2
-%   Detailed explanation goes here
 % /!\ delete all elements in TR1 that contains a node in TR2
 
 [~, ia , ~] = intersect(TR1.Points,TR2.Points,'rows','stable');

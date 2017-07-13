@@ -8,7 +8,6 @@ def matlab_module_exists(module_name):
         matlabRoot = tmp.split('bin\\matlab')[0]
         matlabEngineRoot = matlabRoot+'extern\\engines\\python'
         matlabEngineSetup = matlabEngineRoot + '\\setup.py'
-##        subprocess.call(['cd', matlabEngineRoot])
         subprocess.call(['python', 'setup.py' , 'install'], cwd = matlabEngineRoot)
         try:
             __import__(module_name)

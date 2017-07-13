@@ -1,6 +1,8 @@
 function [ TRout ] = TriErodeMesh( TRin, nbElmts )
-%UNTITLED5 Summary of this function goes here
-%   Detailed explanation goes here
+% Erode a triangulation TRin :
+%   remove elements from TRin triangulation that have an edge   
+%   on the the border of TRin
+% Update TRin and Repeat the operation nbElmts times
 
 BorderNodesID = unique(TRin.freeBoundary);
 ElmtsInitial = TRin.ConnectivityList;

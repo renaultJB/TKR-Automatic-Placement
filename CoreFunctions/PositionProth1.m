@@ -1,4 +1,4 @@
-function [ Tstring , T_str_anat , PC_ML_Width , PC_AP_Width , ProstName] = PositionProth1( name, alpha, Right_Knee , LongStem , Generate_Pos )
+function [ Tstring , T_str_anat , PC_ML_Width , PC_AP_Width , ProstName] = PositionProth1( SubjectCode, alpha, Right_Knee , LongStem , Generate_Pos )
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 close all
@@ -11,19 +11,31 @@ close all
 % 2D : Refer to the surface mesh of the object
 % xp : cutting plane
 tic
-% addpath(strcat(pwd,'\SubFonctions'))
+addpath(strcat(pwd,'\SubFunctions'))
 
-file3D = strcat('Tibia_',name,'_3D.msh');
-file2D = strcat('Tibia_',name,'_2D.msh');
+
+%% Get file names and parse the mesh files to matlab
+
+cd ../
+ProxTibMeshFile = strcat(pwd,'\Tibia_',SubjectCode,'.msh');
+DistTibMeshFile = strcat(pwd,'\DistTibia_',SubjectCode,'.msh');
+cd ./CoreFunctions
+
+[ ProxTib, DistTib ] = ReadCheckMesh( ProxTibMeshFile, DistTibMeshFile );
+
+
+[ CS ] = TibiaCS( ProxTib , DistTib);
+
+
+
 
 %% Parameters
-st = 1.5; %Slice thickness
-
 LegSide = double(2*Right_Knee - 1); % 1 for right knee, -1 for left
 
 r=5;
 Taille_Elmt_Base = 5; % en mm
 Taille_Elmt_Raf = 0.3; % (a peu près) en mm
+
 
 %% read 3D mesh of the tibia
 % Lecteur
@@ -214,7 +226,7 @@ Centroid_PcondyleLat = mean(PcondyleLat);
 XLatMed_1  = Centroid_PcondyleMed-Centroid_PcondyleLat;
 XLatMed_1  = XLatMed_1' / norm(XLatMed_1);
 Pcondyle = [PcondyleLat ; PcondyleMed];
-[nc,~] = PlanMC(Pcondyle);
+[nc,~] = LS_Plan(Pcondyle);
 
 YPostAnt_1 =cross(nc , XLatMed_1)/norm(cross(nc , XLatMed_1));
 XLatMed_1 = cross(YPostAnt_1 , nc) / norm(cross(YPostAnt_1 , nc));
@@ -226,7 +238,7 @@ TP_Central = 1/4*TP_Width; %Central zone not intersecting with condyles
 
 
 Pcondyle = [PcondyleLat;PcondyleMed];
-[nc,dc] = PlanMC(Pcondyle);
+[nc,dc] = LS_Plan(Pcondyle);
 
 Centroid_PcondyleMed = mean(PcondyleMed);
 Centroid_PcondyleLat = mean(PcondyleLat);
@@ -276,7 +288,7 @@ PcondyleMed = unique([PtsCondyleMed;PcondyleMed],'rows');
 PcondyleLat = unique([PtsCondyleLat;PcondyleLat],'rows');
 
 Pcondyle = [PcondyleLat;PcondyleMed];
-[nc,dc] = PlanMC(Pcondyle);
+[nc,dc] = LS_Plan(Pcondyle);
 
 % Centroids
 CMed = mean( PcondyleMed );

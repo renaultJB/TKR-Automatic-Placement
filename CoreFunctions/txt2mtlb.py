@@ -18,7 +18,10 @@ def read_nodesGMSH(file_name):
 def read_meshGMSH(file_name):
     import os
     cwd = os.getcwd()
-    fname = cwd + file_name
+    if file_name[1] != ':':
+        fname = cwd + file_name
+    else :
+        fname = file_name
     f = open(fname,'r')
     N_nodes=int(f.readlines()[4])
     f.close()

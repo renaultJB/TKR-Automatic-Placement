@@ -1,32 +1,14 @@
-function [ Results ] = TibiaCS( name , oprtr)
+function [ Results ] = TibiaCS( ProxTib , DistTib)
 % Fit an ACS on a Tibia composed of the proximal tibia and the tibial part of
 % the ankle
 
-addpath(strcat(pwd,'\SubFonctions'));
-addpath(strcat(pwd,'\SubFonctions\SurFit'));
-
-XYZELMTS = py.txt2mtlb.read_meshGMSH(strcat('\Repere3DData\',name,'_TIB',oprtr,'05.msh'));
-Pts2D = [cell2mat(cell(XYZELMTS{'X'}))' cell2mat(cell(XYZELMTS{'Y'}))' cell2mat(cell(XYZELMTS{'Z'}))'];
-Elmts2D = double([cell2mat(cell(XYZELMTS{'N1'}))' cell2mat(cell(XYZELMTS{'N2'}))' cell2mat(cell(XYZELMTS{'N3'}))']);
-
-
-% Verify that normal are outward-pointing and fix if not
-Elmts2D = fixNormals( Pts2D, Elmts2D );
-ProxTib = triangulation(Elmts2D,Pts2D);
-
-%Read distal Tibia
-XYZELMTS = py.txt2mtlb.read_meshGMSH(strcat('\Repere3DData\',name,'_CHE',oprtr,'05.msh'));Pts2D = [cell2mat(cell(XYZELMTS{'X'}))' cell2mat(cell(XYZELMTS{'Y'}))' cell2mat(cell(XYZELMTS{'Z'}))'];
-Elmts2D = double([cell2mat(cell(XYZELMTS{'N1'}))' cell2mat(cell(XYZELMTS{'N2'}))' cell2mat(cell(XYZELMTS{'N3'}))']);
-
-
-% Verify that normal are outward-pointing and fix if not
-Elmts2D = fixNormals( Pts2D, Elmts2D );
-DistTib = triangulation(Elmts2D,Pts2D);
+addpath(strcat(pwd,'\SurfFit'));
+addpath(strcat(pwd,'\TibiaFun'));
 
 % Unite both distal and proximal tibia mesh
-Tibia = triangulationUnite(ProxTib,DistTib);
+Tibia = TriUnite(ProxTib,DistTib);
 
-[ InertiaMatrix, Center ] = InertiaProperties( Tibia.Points, Tibia.ConnectivityList );
+[ InertiaMatrix, Center ] = TriInertiaProperties( Tibia );
 [V_all,~] = eig(InertiaMatrix);
 Center0 = Center;
 
@@ -47,15 +29,15 @@ Minertia = V_all;
 Alt =  min(DistTib.Points*Z0)+1 : 0.3 : max(DistTib.Points*Z0)-1;
 Area=[];
 for d = Alt
-    [ ~ , Area(end+1), ~ ] = TriPlanIntersect( DistTib.Points, DistTib.ConnectivityList, Z0 , d );
+    [ ~ , Area(end+1), ~ ] = TriPlanIntersect( DistTib, Z0 , d );
 end
 [~,Imax] = max(Area);
-[ Curves ,  ~ , ~ ] = TriPlanIntersect( DistTib.Points, DistTib.ConnectivityList, Z0 , Alt(Imax) );
+[ Curves ,  ~ , ~ ] = TriPlanIntersect( DistTib, Z0 , Alt(Imax) );
 
 CenterAnkleInside = PlanPolygonCentroid3D( Curves.Pts);
 
 
-[Cmean,~,~,~,~,~]=meshCurvature(DistTib,false);
+[Cmean,~,~,~,~,~]=TriCurvature(DistTib,false);
 
 AnkleArtSurfNodesOK0 =  find(Cmean>quantile(Cmean,0.65) & ...
     Cmean<quantile(Cmean,0.95) & ...
@@ -93,10 +75,10 @@ AnkleArtSurf = TriCloseMesh(DistTib,AnkleArtSurf,10);
 % to original plan
 
 
-[nAAS,dAAS] = PlanMC(AnkleArtSurf.Points);
+[nAAS,dAAS] = LS_Plan(AnkleArtSurf.Points);
 nAAS = sign(nAAS'*Z0)*nAAS; dAAS = sign(nAAS'*Z0)*dAAS;
 
-[ Curves , ~, ~ ] = TriPlanIntersect( DistTib.Points, DistTib.ConnectivityList, nAAS , -dAAS+5 );
+[ Curves , ~, ~ ] = TriPlanIntersect( DistTib, nAAS , -dAAS+5 );
 
 Centr = PlanPolygonCentroid3D( Curves.Pts );
 
@@ -124,17 +106,17 @@ Area = zeros(size(Alt));
 i=0;
 for d = Alt
     i=i+1;
-    [ ~ , Area(i), ~ ] = TriPlanIntersect( ProxTib.Points, ProxTib.ConnectivityList, Z0 , d );
+    [ ~ , Area(i), ~ ] = TriPlanIntersect( ProxTib, Z0 , d );
 end
 AltAtMax = Alt(Area==max(Area));
 
-[~,Zepi,~] = FitArea(Alt, Area);
+[~,Zepi,~] = EpiphysisDiaphysisEnds(Alt, Area);
 
 ElmtsEpi = find(ProxTib.incenter*Z0>Zepi); % & rad2deg(acos(ProxTib.faceNormal*Z0))<45;
 EpiTib = TriReduceMesh( ProxTib, ElmtsEpi );
 
 
-[Cmean,Cgaussian,~,~,~,~]=meshCurvature(EpiTib,false);
+[Cmean,Cgaussian,~,~,~,~]=TriCurvature(EpiTib,false);
 
 Curvtr = sqrt(4*Cmean.^2-2*Cgaussian);
 
@@ -143,7 +125,7 @@ NodesEpiArtSurfOK = find(rad2deg(acos(EpiTib.vertexNormal*Z0))<35 &...
 Pcondyle = EpiTib.Points(NodesEpiArtSurfOK,:);
 EpiTibArt = TriReduceMesh( EpiTib, [] , NodesEpiArtSurfOK );
 EpiTibArt = TriCloseMesh( EpiTib, EpiTibArt, 6 );
-[Ztp,d] = PlanMC(Pcondyle); Ztp = sign(Z0'*Ztp)*Ztp;
+[Ztp,d] = LS_Plan(Pcondyle); Ztp = sign(Z0'*Ztp)*Ztp;
 
 % Associate an ellipse to the kept elements external border
 [ Xel, Yel, ellipsePts , ellipsePpties] = EllipseOnEdge( EpiTibArt, Ztp , d );
@@ -160,11 +142,11 @@ LatPtsInit = [LatPtsInit; LatPtsInit - 1/3*a*Xel'; LatPtsInit + 1/3*a*Xel'];
 % and lateral articular surface
 EpiTibArtMed = TriConnectedPatch( EpiTibArt, MedPtsInit );
 EpiTibArtLat = TriConnectedPatch( EpiTibArt, LatPtsInit );
-EpiTibArt = triangulationUnite(EpiTibArtMed,EpiTibArtLat);
+EpiTibArt = TriUnite(EpiTibArtMed,EpiTibArtLat);
 
 
 % Repeat the procedure to update the ellipse
-[Ztp,d] = PlanMC(EpiTibArt.Points); Ztp = sign(Z0'*Ztp)*Ztp;
+[Ztp,d] = LS_Plan(EpiTibArt.Points); Ztp = sign(Z0'*Ztp)*Ztp;
 [ Xel, Yel, ellipsePts , ellipsePpties] = EllipseOnEdge( EpiTibArt, Ztp , d );
 a = ellipsePpties.a;
 b = ellipsePpties.b;
@@ -176,7 +158,7 @@ Yel = sign(Yel'*Y0)*Yel;
 
 d = mean(ellipsePts)*Xel+0.5*a;
 
-[ Curves , ~, ~ ] = TriPlanIntersect( ProxTib.Points, ProxTib.ConnectivityList, Xel , d );
+[ Curves , ~, ~ ] = TriPlanIntersect( ProxTib, Xel , d );
 
 MedialPts_tmp = Curves(1).Pts(bsxfun(@minus,Curves(1).Pts,mean(ellipsePts))*Yel>0,:);
 [~,IDPtsMax] = max(MedialPts_tmp*Z0);
@@ -213,7 +195,7 @@ EpiTibCenterRidgeLat = TriReduceMesh( EpiTib, [] , NodesOnCenterID );
 EpiTibCenterRidgeLat = TriDilateMesh(EpiTib, EpiTibCenterRidgeLat,5);
 
 
-EpiTibCenterRidge = triangulationUnite(EpiTibCenterRidgeLat,EpiTibCenterRidgeMed);
+EpiTibCenterRidge = TriUnite(EpiTibCenterRidgeLat,EpiTibCenterRidgeMed);
 
 % Update the previously identified AS elements to remove the one 
 % (potentially) located on the central part of the tibial plateau
@@ -227,12 +209,12 @@ EpiTibArt = TriDifferenceMesh(EpiTibArt,EpiTibCenterRidge);
 EpiTibArt = TriDifferenceMesh(EpiTibArt,EpiTibCenterRidge);
 EpiTibArtMed = TriConnectedPatch( EpiTibArt, MedPtsInit );
 EpiTibArtLat = TriConnectedPatch( EpiTibArt, LatPtsInit );
-EpiTibArt = triangulationUnite(EpiTibArtMed,EpiTibArtLat);
+EpiTibArt = TriUnite(EpiTibArtMed,EpiTibArtLat);
 EpiTibArt = TriOpenMesh(EpiTib,EpiTibArt, 15);
 EpiTibArt = TriCloseMesh(EpiTib,EpiTibArt, 30);
 
 % Update the plan and the ellipse
-[Ztp,d] = PlanMC(EpiTibArt.Points); Ztp = sign(Z0'*Ztp)*Ztp;
+[Ztp,d] = LS_Plan(EpiTibArt.Points); Ztp = sign(Z0'*Ztp)*Ztp;
 [ Xel, Yel, ellipsePts , ellipsePpties] = EllipseOnEdge( EpiTibArt, Ztp , d );
 a = ellipsePpties.a;
 b = ellipsePpties.b;
@@ -261,9 +243,9 @@ EpiTibArtLat = TriOpenMesh(EpiTib,EpiTibArtLat,2);
 EpiTibArtLat = TriConnectedPatch( EpiTibArtLat, LatPtsInit );
 EpiTibArtLat = TriCloseMesh(EpiTib,EpiTibArtLat,10);
 
-EpiTibArt = triangulationUnite(EpiTibArtMed,EpiTibArtLat);
+EpiTibArt = TriUnite(EpiTibArtMed,EpiTibArtLat);
 
-[Ztp,d] = PlanMC(EpiTibArt.Points); Ztp = sign(Z0'*Ztp)*Ztp;
+[Ztp,d] = LS_Plan(EpiTibArt.Points); Ztp = sign(Z0'*Ztp)*Ztp;
 [ Xel, Yel, ~ , ellipsePpties] = EllipseOnEdge( EpiTibArt, Ztp , d );
 a = ellipsePpties.a;
 b = ellipsePpties.b;
@@ -284,9 +266,9 @@ EpiTibArtLat = TriOpenMesh(EpiTib,EpiTibArtLat,2);
 EpiTibArtLat = TriConnectedPatch( EpiTibArtLat, LatPtsInit );
 EpiTibArtLat = TriCloseMesh(EpiTib,EpiTibArtLat,10);
 
-EpiTibArt = triangulationUnite(EpiTibArtMed,EpiTibArtLat);
+EpiTibArt = TriUnite(EpiTibArtMed,EpiTibArtLat);
 
-[Ztp,d] = PlanMC(EpiTibArt.Points); Ztp = sign(Z0'*Ztp)*Ztp; d = sign(Z0'*Ztp)*d;
+[Ztp,d] = LS_Plan(EpiTibArt.Points); Ztp = sign(Z0'*Ztp)*Ztp; d = sign(Z0'*Ztp)*d;
 [ Xel, Yel, ~ , ~] = EllipseOnEdge( EpiTibArt, Ztp , d );
 Xel = sign(Xel'*Y0)*Xel;
 Yel = sign(Yel'*Y0)*Yel;
@@ -304,7 +286,7 @@ PointSpace = mean(diff(Alt_TP));
 TPLayerPts = zeros(round(length(Alt_TP)*1.1*max(Area)/PointSpace^2),3);
 j=0;
 for alt = Alt_TP
-    [ Curves , ~ , ~ ] = TriPlanIntersect( EpiTib.Points, EpiTib.ConnectivityList, Ztp , alt );
+    [ Curves , ~ , ~ ] = TriPlanIntersect( EpiTib, Ztp , alt );
     for c=1:length(Curves)
         
         Pts_Tmp = Curves(c).Pts*[Xel Yel Ztp];
@@ -350,24 +332,24 @@ Xend = cross(Yend,Zend);
 Vend = [Xend Yend Zend];
 
 % Result write
-Results.tech3.CenterAnkle = CenterAnkle;
-Results.tech3.CenterKnee = CenterKnee;
-Results.tech3.Z0 = Z0;
-Results.tech3.Ztp = Ztp;
-Results.tech3.Ytp = Ytp;
-Results.tech3.Xtp = Xtp;
-Results.tech3.Xend = Xend;
-Results.tech3.Yend = Yend;
-Results.tech3.Zend = Zend;
-Results.tech3.V = Vend;
-Results.tech3.Name='ArtSurfPIA';
+Results.CenterAnkle = CenterAnkle;
+Results.CenterKnee = CenterKnee;
+Results.Ztp = Ztp;
+Results.Ytp = Ytp;
+Results.Xtp = Xtp;
+Results.PlanTPd = d;
+
+Results.Xend = Xend;
+Results.Yend = Yend;
+Results.Zend = Zend;
+Results.Vend = Vend;
 
 %% Inertia Results
 Yi = V_all(:,2); Yi = sign(Yi'*Y0)*Yi;
 Xi = cross(Yi,Z0);
 
+
 Results.Center0 = Center0;
-Results.CenterAnkle = CenterAnkle;
 Results.Zinertia = Z0;
 Results.Yinertia = Yi;
 Results.Xinertia = Xi;

@@ -2,8 +2,9 @@ function [ Results ] = TibiaCS( ProxTib , DistTib)
 % Fit an ACS on a Tibia composed of the proximal tibia and the tibial part of
 % the ankle
 
-addpath(strcat(pwd,'\SurfFit'));
-addpath(strcat(pwd,'\TibiaFun'));
+addpath(strcat(pwd,'\SubFunctions\SurfFit'));
+addpath(strcat(pwd,'\SubFunctions\TibiaFun'));
+addpath(strcat(pwd,'\SubFunctions\TriFun'));
 
 % Unite both distal and proximal tibia mesh
 Tibia = TriUnite(ProxTib,DistTib);

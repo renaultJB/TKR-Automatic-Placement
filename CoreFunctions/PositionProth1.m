@@ -4,7 +4,6 @@ function [ Tstring , T_str_anat , PC_ML_Width , PC_AP_Width , ProstName] = Posit
 close all
 % Lexic
 % TP : Tibial Plateau
-% Slc : slice (thick plan)
 % 0 (at the end) : initial value
 % Rct : CT Scan coordinate system
 % Rtb : Tibial eigen vector coordinate system
@@ -12,6 +11,13 @@ close all
 % xp : cutting plane
 tic
 addpath(strcat(pwd,'\SubFunctions'))
+
+%% Parameters
+LegSide = double(2*Right_Knee - 1); % 1 for right knee, -1 for left
+
+r=5;
+Taille_Elmt_Base = 5; % en mm
+Taille_Elmt_Raf = 0.3; % (a peu près) en mm
 
 
 %% Get file names and parse the mesh files to matlab
@@ -23,137 +29,9 @@ cd ./CoreFunctions
 
 [ ProxTib, DistTib ] = ReadCheckMesh( ProxTibMeshFile, DistTibMeshFile );
 
-
 [ CS ] = TibiaCS( ProxTib , DistTib);
 
-
-
-
-%% Parameters
-LegSide = double(2*Right_Knee - 1); % 1 for right knee, -1 for left
-
-r=5;
-Taille_Elmt_Base = 5; % en mm
-Taille_Elmt_Raf = 0.3; % (a peu près) en mm
-
-
-%% read 3D mesh of the tibia
-% Lecteur
-%KESKONRIX_TIBIA_075mm  AD_Tibia_Final_075mm    VC_075mm_Elmts  KONE_Tibia_Final_075mm
-XYZ = py.txt2mtlb.read_nodesGMSH(file3D);
-Points = [cell2mat(cell(XYZ{'X'}))' cell2mat(cell(XYZ{'Y'}))' cell2mat(cell(XYZ{'Z'}))'];
-
-%% Calcul de l'aire en fonction de Z et fit smooth spline
-% Evolution de la surface de
-[ ~,V_all,~]=shape_eig_vctr(Points);
-Veig_sorted = OrgnizEigVctr( V_all );
-PtsForArea = Veig_sorted'*Points';
-i=0;
-
-for z = floor(min(PtsForArea(3,:))) : st : ceil(max(PtsForArea(3,:)))
-    i=i+1;
-    Pts_keeped = PtsForArea(:,PtsForArea(3,:)>(z-0.5) & PtsForArea(3,:)<(z+0.5));
-    [~,area] = boundary(Pts_keeped(1:2,:)');
-    Z(i) = z;
-    Area(i) = area;
-end
-
-% Fit: 'Area vs Z coordinate in Tibia coordinate system'.
-[xData, yData] = prepareCurveData( Z, Area );
-% Set up fittype and options.
-ft = fittype( 'smoothingspline' );
-opts = fitoptions( 'Method', 'SmoothingSpline' );
-opts.SmoothingParam = 0.05;
-% Fit model to data.
-[fitresult, gof] = fit( xData, yData, ft, opts );
-% Plot fit with data.
-[fx,fxx] = differentiate(fitresult, Z); %Derivées premiere et 2nd du fit
-curv = fxx./(1+fx.^2).^1.5; %Curvature
-
-%% Separate epihisys and calculate Epiphysis Inertial axis
-% Find the maximal area altitude
-[~,Ipt] = max(Area);
-Z_Start_PT = Z(Ipt(1)) - 1*st;
-Pts_1SLc_TP = PtsForArea(:,PtsForArea(3,:)>(Z_Start_PT-0.5) & PtsForArea(3,:)<(Z_Start_PT+0.5));
-Centroid_TP_Rtb =  mean(Pts_1SLc_TP,2);
-[~,Ipt] = min(fx);
-Z_End_PT = Z(Ipt(1));
-Thickness_PT = Z_End_PT - Z_Start_PT +3*st;
-
-Pts_TP0 = PtsForArea(:,PtsForArea(3,:)>Z_Start_PT & PtsForArea(3,:)<Z_End_PT);
-Pts_TP_Rtb = Pts_TP0';
-
-for i=1:50
-    [ ~,V_TP_Rtb,~]=shape_eig_vctr(Pts_TP_Rtb);
-    VZ = V_TP_Rtb(:,3);
-    Pts_TP_Rtb = PtsForArea(:,bsxfun(@minus,PtsForArea,Centroid_TP_Rtb)'*VZ>0 &...
-        bsxfun(@minus,PtsForArea,Centroid_TP_Rtb)'*VZ<Thickness_PT);
-end
-
-% Back to the CT coordinate frame
-V_TP = Veig_sorted*V_TP_Rtb;
-Pts_Epi = Veig_sorted*Pts_TP_Rtb;
-Centroid_TP = Veig_sorted*Centroid_TP_Rtb;
-
-%% Separate diaphysis and calculate diaphysis axis
-
-% Find the end of linear part of the Area vs Z curve, hypothetized to
-% correspond to the diaphysis
-
-% Start from the middle of the diaphysis and keep going in both direction
-% until high curvature is found :
-[~,Imedian] = min(abs(Z-median(Z)));
-i = Imedian; j = Imedian;
-while fxx(i)>-2
-    i=i-1;
-    if i == 1
-        break
-    end
-end
-i=i+10; % Go back 10 slices
-while fxx(j)<2
-    j=j+1;
-    if j == length(Z)
-        break
-    end
-    
-end
-j=j-10; % Go back 10 slices
-
-% Proximal limit
-Zend_diaphysis = Z(j);
-Pts_end = PtsForArea(:,PtsForArea(3,:)>(Zend_diaphysis-0.5) & PtsForArea(3,:)<(Zend_diaphysis+0.5));
-% Back to CT coordinate system
-Centroid_End_Diaphysis = Veig_sorted * mean(Pts_end,2);
-
-% Distal limit
-AreaDiaphMean = mean(Area(i : j));
-Zstart_diaphysis = max(Z(i),Zend_diaphysis-sqrt(AreaDiaphMean)*5) ;
-Pts_start = PtsForArea(:,PtsForArea(3,:)>(Zstart_diaphysis-0.5) & PtsForArea(3,:)<(Zstart_diaphysis+0.5));
-% Back to CT coordinate system
-Centroid_Start_Diaphysis = Veig_sorted * mean(Pts_start,2);
-
-% Compute the anatomical Z axis of the diaphysis
-D_pl=Centroid_End_Diaphysis(3) ; % Diaphysis proximal limit
-D_dl=min(Points(:,3)) + 3 ; % Diaphysis distal limit
-
-[ VZ,~,~]=shape_eig_vctr(Points);
-Diaphise_Pts = Points(bsxfun(@minus,Points,Centroid_Start_Diaphysis')*VZ>0 & ...
-    bsxfun(@minus,Points,Centroid_End_Diaphysis')*VZ<0 , : );
-
-for i=1:50
-    [ VZ,~,~]=shape_eig_vctr(Diaphise_Pts);
-    Diaphise_Pts = Points(bsxfun(@minus,Points,Centroid_Start_Diaphysis')*VZ>0 & ...
-        bsxfun(@minus,Points,Centroid_End_Diaphysis')*VZ<0 , : );
-end
-[ VZ,~,~]=shape_eig_vctr(Diaphise_Pts);
-Centroid_Diaphysis =  mean(Diaphise_Pts);
-
-%% read the surface mesh of the same Tibia from the same CT Scan
-% Read with python script for performance
-XYZ = py.txt2mtlb.read_nodesGMSH(file2D);
-Pts2D = [cell2mat(cell(XYZ{'X'}))' cell2mat(cell(XYZ{'Y'}))' cell2mat(cell(XYZ{'Z'}))'];
-Pts2D_BU = Pts2D; %All points read Back Up for latter
+[ PtMedialThirdOfTT, LegSide, PtsMedThird, PtsTT ] = TibialTuberosityPos(ProxTib, CS , 1);
 
 %% Get a pseudo latero-medial vector obtained from the the medial anterior plan on the tibial diaphysis
 % Create a 1st approximation of the medio-lateral vector & Post Ant Vector
@@ -184,70 +62,7 @@ end
 TT_lm = TT_position( Pts2D_meta,V_TT,VZ );
 
 
-%% Keep Only the 2D surface points of the epiphysis and fit a LS plan on the condyle
-Pts2D(bsxfun(@minus,Pts2D,Centroid_TP')*V_TP(:,3)<0,:)=[];
-[ normals, curvature ] = findPointNormals(Pts2D, 5);
-if mean(Pts2D(:,3))>0
-    normals =  -normals;
-end
 
-Rc = sqrt(1./(curvature*20)); % Curvature radii at each surface points
-Icurv0 = find(Rc>50); %All points with at least 100mm curvature radii
-% IcurvH = find(Rc<5); %All points with high curvature radii
-
-Ncurv0 = normals(Icurv0,:);
-Pcurv0 = Pts2D(Icurv0,:);
-Pcondyle = Pcurv0( acos( Ncurv0*V_TP(:,3) ) < 0.27,:); % Angle between Condyles and Tibia shaft axis is less than 30°
-
-IcurvH = curvature>quantile(curvature,0.5); %0.80
-Pedge = Pts2D(IcurvH,:);
-
-%% Separate Medial & Lateral Condyle
-% Seperate Two Condyles
-IDX = kmeans(Pcondyle, 2);
-Pcondyle1 = PCRegionGrowing(Pcondyle(IDX==1,:),mean(Pcondyle(IDX==1,:)),3);
-Pcondyle2 = PCRegionGrowing(Pcondyle(IDX==2,:),mean(Pcondyle(IDX==2,:)),3);
-Centroid_Pcondyle1 = mean(Pcondyle1);
-Centroid_Pcondyle2 = mean(Pcondyle2);
-
-% Define which condyle is medial and which is lateral
-if Centroid_Pcondyle1*XLatMed_0>Centroid_Pcondyle2*XLatMed_0
-    PcondyleMed = Pcondyle1;
-    PcondyleLat = Pcondyle2;
-else
-    PcondyleMed = Pcondyle2;
-    PcondyleLat = Pcondyle1;
-end
-Centroid_PcondyleMed = mean(PcondyleMed);
-Centroid_PcondyleLat = mean(PcondyleLat);
-
-% Create a 2nd approximation of the medio-lateral vector
-
-XLatMed_1  = Centroid_PcondyleMed-Centroid_PcondyleLat;
-XLatMed_1  = XLatMed_1' / norm(XLatMed_1);
-Pcondyle = [PcondyleLat ; PcondyleMed];
-[nc,~] = LS_Plan(Pcondyle);
-
-YPostAnt_1 =cross(nc , XLatMed_1)/norm(cross(nc , XLatMed_1));
-XLatMed_1 = cross(YPostAnt_1 , nc) / norm(cross(YPostAnt_1 , nc));
-
-TP_Width = range((bsxfun(@minus,Pts2D,Centroid_TP')*XLatMed_1)); %Medio-lateral width of the Tibial Plate
-TP_Central = 1/4*TP_Width; %Central zone not intersecting with condyles
-
-[ PcondyleMed, PcondyleLat ] = FillCondyles(PcondyleMed, PcondyleLat, Pts2D);
-
-
-Pcondyle = [PcondyleLat;PcondyleMed];
-[nc,dc] = LS_Plan(Pcondyle);
-
-Centroid_PcondyleMed = mean(PcondyleMed);
-Centroid_PcondyleLat = mean(PcondyleLat);
-
-XLatMed_2  = Centroid_PcondyleMed-Centroid_PcondyleLat;
-XLatMed_2  = XLatMed_2' / norm(XLatMed_2);
-
-YPostAnt_2 = cross(nc , XLatMed_2)/norm(cross(nc , XLatMed_2));
-XLatMed_2 = cross(YPostAnt_2 , nc) / norm(cross(YPostAnt_2 , nc));
 
 %Filter  edge points too far from condyle plan
 Centroid_TP_onPlan = (Centroid_TP -(Centroid_TP' - [0 0 -dc/nc(3)])*nc*nc)';
@@ -312,11 +127,7 @@ end
 Vanat=[Xanat Yanat Zanat];
 
 %% Compute Mechanical tibial Coordinate System
-Zmech = VZ;
-Ymech = cross(Zmech , XLatMed_3)/norm(cross(Zmech , XLatMed_3));
-Xmech = cross(Ymech , Zmech);
 
-Vmech = [Xmech Ymech Zmech];
 
 % Calculate subject varus preOP
 Zanat_ProjmechXZ = Zanat - dot(Zanat,Ymech)*Ymech; Zanat_ProjmechXZ=Zanat_ProjmechXZ/norm(Zanat_ProjmechXZ);

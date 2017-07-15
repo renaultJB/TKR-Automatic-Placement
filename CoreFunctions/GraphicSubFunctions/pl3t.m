@@ -23,9 +23,9 @@ else
 end
 
 if isempty(varargin)
-    plot(X,Y,Z,'b.')
+    plot3(X,Y,Z,'b.')
 else
-    plot(X,Y,Z,varargin{1:numInputs})
+    plot3(X,Y,Z,varargin{1:numInputs})
 end
 
 

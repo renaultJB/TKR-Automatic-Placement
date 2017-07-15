@@ -2,3 +2,4 @@ data/
 gmsh/
 Notes/
 testData/
+*.msh

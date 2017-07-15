@@ -111,7 +111,7 @@ for d = Alt
 end
 AltAtMax = Alt(Area==max(Area));
 
-[~,Zepi,~] = EpiphysisDiaphysisEnds(Alt, Area);
+[Zdiaph,Zepi,~] = EpiphysisDiaphysisEnds(Alt, Area);
 
 ElmtsEpi = find(ProxTib.incenter*Z0>Zepi); % & rad2deg(acos(ProxTib.faceNormal*Z0))<45;
 EpiTib = TriReduceMesh( ProxTib, ElmtsEpi );
@@ -332,29 +332,52 @@ Xend = cross(Yend,Zend);
 
 Vend = [Xend Yend Zend];
 
-% Result write
-Results.CenterAnkle = CenterAnkle;
-Results.CenterKnee = CenterKnee;
-Results.Ztp = Ztp;
-Results.Ytp = Ytp;
-Results.Xtp = Xtp;
-Results.PlanTPd = d;
 
-Results.Xend = Xend;
-Results.Yend = Yend;
-Results.Zend = Zend;
-Results.Vend = Vend;
+% Calculate the End Of diaphysis and start of epiphysis plane in tibia CS
+CurveEndDiaphysis = TriPlanIntersect(ProxTib,Z0,Zdiaph(2));
+[ CentroidEndDiaphysis, ~ ] = PlanPolygonCentroid3D( CurveEndDiaphysis.Pts );
 
-%% Inertia Results
+CurveEndEpiphysis = TriPlanIntersect(ProxTib,Z0,Zepi);
+[ CentroidEndEpiphysis, ~ ] = PlanPolygonCentroid3D( CurveEndEpiphysis.Pts );
+
+
+
+%% Result final CS
+Results.Origin = CenterKnee;
+Results.X = Xend;
+Results.Y = Yend;
+Results.Z = Zend;
+Results.V = Vend;
+Results.AltEndDiaph = CentroidEndDiaphysis*Zend;
+Results.AltStartEpiph = CentroidEndEpiphysis*Zend;
+
+
+%% CS of the principal Inertia axes
 Yi = V_all(:,2); Yi = sign(Yi'*Y0)*Yi;
 Xi = cross(Yi,Z0);
 
+Results.PiaCS.Origin0 = Center0;
+Results.PiaCS.Z = Z0;
+Results.PiaCS.Y = Yi;
+Results.PiaCS.X = Xi;
+Results.PiaCS.M = [Xi Yi Z0];
+Results.PiaCS.Description = 'Coordinate system of the principal inertia axes of the tibia';
+Results.PiaCS.AltEndDiaph = Zdiaph(2);
+Results.PiaCS.AltStartEpiph = Zepi;
 
-Results.Center0 = Center0;
-Results.Zinertia = Z0;
-Results.Yinertia = Yi;
-Results.Xinertia = Xi;
-Results.Minertia = [Xi Yi Z0];
+
+%% CS of the plane fitted on the tibial plateau condyles
+Results.TpCS.CenterKnee = CenterKnee;
+Results.TpCS.Z = Ztp;
+Results.TpCS.Y = Ytp;
+Results.TpCS.X = Xtp;
+Results.TpCS.d = d;
+Results.TpCS.Description = 'Coordinate system of the tibial plateau plan, least square plan of the condyles';
+
+%% Other paramaters
+Results.Morph.CenterAnkle = CenterAnkle;
+Results.Morph.Zdiaph = Zdiaph;
+Results.Morph.Zepi = Zepi;
 
 
 end

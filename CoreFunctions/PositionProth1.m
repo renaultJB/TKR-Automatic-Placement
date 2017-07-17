@@ -47,10 +47,10 @@ DistTibMeshFile = strcat(pwd,'\DistTibia_',SubjectCode,'.msh');
 cd ./CoreFunctions
 
 %% Read mesh files of the proximal an distal tibia
-% [ ProxTib, DistTib ] = ReadCheckMesh( ProxTibMeshFile, DistTibMeshFile );
+[ ProxTib, DistTib ] = ReadCheckMesh( ProxTibMeshFile, DistTibMeshFile );
 
 %% Construct the coordinates system of the tibia
-% [ CS ] = TibiaCS( ProxTib , DistTib);
+[ CS ] = TibiaCS( ProxTib , DistTib);
 
 %% Find the tibial tuberosity of the Tibia, this also permits the identification of the legside  
 [ PtMedialThirdOfTT, LegSideName, ~, ~ ] = TibialTuberosityPos(ProxTib, CS , 0);
@@ -194,6 +194,8 @@ PtsProsthEnd(:,4)=[];
 
 ProsthesisEnd = triangulation(Prosthesis0.ConnectivityList,PtsProsthEnd);
 
+PlotTibiaDeformation(ProxTib, DistTib, ProsthesisEnd,  CS )
+
 
 fID3=fopen(['Output_' SubjectCode '_alpha' num2str(alpha) '.txt'],'w');
 fprintf(fID3,'name= "%s" \r\n', SubjectCode);
@@ -215,11 +217,13 @@ fclose(fID3);
 
 Tstring =sprintf(strcat('newplace=FreeCAD.Matrix',formatSpec2),Tt(:));
 
-Tanat=zeros(4,4);Tanat(1:3,1:3) = Vanat*[LegSide 0 0; 0 1 0; 0 0 -1];
-Tanat(:,4)=[ProthOrig';1];
-Tanat = Tanat';
-T_str_anat = sprintf(strcat('newplaceAnat=FreeCAD.Matrix',formatSpec2),Tanat(:));
+T_str_anat = Tstring;
 
+% Tanat=zeros(4,4);Tanat(1:3,1:3) = Vanat*[LegSide 0 0; 0 1 0; 0 0 -1];
+% Tanat(:,4)=[ProthOrig';1];
+% Tanat = Tanat';
+% T_str_anat = sprintf(strcat('newplaceAnat=FreeCAD.Matrix',formatSpec2),Tanat(:));
+% 
 
 end
 

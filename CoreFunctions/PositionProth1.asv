@@ -4,17 +4,11 @@ function [ Tstring , T_str_anat , ML_Width_xp , AP_Width_xp , ProstName] = Posit
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Inputs :
-%   SubjectCode : 'char' Code of the subject
-%   alpha : 'float' varus angle for the placement of prosthesis
-%   LongStem : 'binary' Decide if a long stem should be used or not
-%
-% Outputs :
-%   Tstring
-%   T_str_anat
-%   ML_Width
-%   Ap_Width
-%   ProstName
+%   Detailed explanation goes here
+%   Inputs :
+%       SubjectCode : 'char' Code of the subject
+%       alpha : 'float' varus angle for the placement of prosthesis
+%       LongStem : 'binary' Decide if a long stem should be used or not
 %
 % Lexic :
 %   TP : Tibial Plateau
@@ -168,10 +162,10 @@ x0(3) = rad2deg(asin(U_TT(2)));
 
 if abs(StemTip(3))>100
     f = @(x)CenteringStemTipGoal(x , Boundary_xp_inRxp , Boundary_ProsthesisTP , StemTip);  % C or CDiaphysisStemTip
-    fcon = @(x)CoverageCost(x, Boundary_xp_inRxp, Boundary_ProsthesisTP , TTproj);
+    fcon = @(x)CoverageCost2(x, Boundary_xp_inRxp, Boundary_ProsthesisTP , TTproj);
     x = fmincon(f,x0,A,b,Aeq,beq,lb,ub,fcon);
 else
-    f = @(x)CoverageCost(x, Boundary_xp_inRxp, Boundary_ProsthesisTP , TTproj);  % C or CDiaphysisStemTip
+    f = @(x)CoverageCost2(x, Boundary_xp_inRxp, Boundary_ProsthesisTP , TTproj);  % C or CDiaphysisStemTip
     options = optimoptions(@fminunc,'Algorithm','quasi-newton','MaxFunctionEvaluations',500);
     [x,fval] = fminunc(f,x0,options);
 end

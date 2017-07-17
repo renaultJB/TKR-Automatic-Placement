@@ -102,10 +102,10 @@ def find_ProsthFile(directory,Pname,Ptype):
 #    print(mshFile)
     return mshFile
 
-def find_ProsthFile_read_nodesGMSH(directory,Pname,Ptype):
+def find_ProsthFile_read_meshGMSH(directory,Pname,Ptype):
     
     mshFile = find_ProsthFile(directory,Pname,Ptype)
     
-    XYZ = read_nodesGMSH(mshFile)
+    XYZElmts = read_meshGMSH(mshFile)
     
-    return XYZ
+    return XYZElmts

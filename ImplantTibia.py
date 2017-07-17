@@ -69,9 +69,9 @@ eng = matlab.engine.start_matlab()
 # [-4.5,-1.5,1.5,4.5]
 for alpha in [0.0] :
     if TypeProth == 2:
-        T, Tanat, ML_Width , AP_Width, ProstName = eng.PositionProth2(SubjectCode,alpha,RightKnee,LongStem,PosFiles,nargout=5)
+        T, Tanat, ML_Width , AP_Width, ProstName = eng.PositionProth2(SubjectCode,alpha,LongStem,nargout=5)
     elif TypeProth == 1 :
-        T, Tanat, ML_Width , AP_Width, ProstName = eng.PositionProth1(SubjectCode,alpha,RightKnee,LongStem,PosFiles,nargout=5)
+        T, Tanat, ML_Width , AP_Width, ProstName = eng.PositionProth1(SubjectCode,alpha,LongStem,nargout=5)
     print(ML_Width)    
 
     f = open('ScriptFreeCAD.py','r')

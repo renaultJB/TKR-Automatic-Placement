@@ -5,6 +5,7 @@ def matlab_module_exists(module_name):
         __import__(module_name)
     except ImportError:
         tmp = subprocess.check_output(["where", "matlab"])
+        tmp = tmp.decode("utf-8")
         matlabRoot = tmp.split('bin\\matlab')[0]
         matlabEngineRoot = matlabRoot+'extern\\engines\\python'
         matlabEngineSetup = matlabEngineRoot + '\\setup.py'
@@ -18,6 +19,8 @@ def matlab_module_exists(module_name):
             lines = ['open a cmd prompt as admin and execute the following commands :']
             lines.append('cd '+ matlabEngineRoot)
             lines.append('python setup.py install')
+            lines.append('_______________________')
+            lines.append('https://fr.mathworks.com/help/matlab/matlab_external/install-the-matlab-engine-for-python.html')
             f.write('\n'.join(lines))
             f.close()
             print(' The \'MatlabEngineInstall.txt\' file was created')

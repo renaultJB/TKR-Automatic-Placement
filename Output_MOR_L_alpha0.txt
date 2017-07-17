@@ -1,0 +1,18 @@
+name= "MOR_L" 
+Axe Méca X : 
+ -0.16522777 0.98537717 0.04161278  
+Axe Méca Y : 
+ -0.98594814 -0.16608238 0.01796975  
+Axe Méca Z : 
+ 0.02461813 -0.03805895 0.99897220  
+Normal plateau tibial : 
+ 0.01012390 0.04796716 0.99879761  
+Angle Diaphise/Plateau tibial plan Frontal (angle varus) : 
+ 0.41   
+Angle Diaphise/Plateau tibial plan Sagittal (pente tibial) : 
+ -8.18   
+Partie Python pour freeCAD 
+ 
+obj0=App.ActiveDocument.ActiveObject 
+obj = FreeCAD.getDocument("Unnamed").getObject("Part__Feature") 
+newplace=FreeCAD.Matrix(-0.94877263,0.31579740,-0.01012390,76.32758573,-0.31498923,-0.94788234,-0.04796716,82.12115780,0.02474417,0.04232101,-0.99879761,-576.17018977,0.00000000,0.00000000,0.00000000,1.00000000)

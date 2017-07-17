@@ -185,11 +185,8 @@ else
     
 end
 
-% for i = 1 : length(Curves)
-%     Curves(i).Pts = unique(Curves(i).Pts,'rows','stable');
-% %     Curves(i).Pts(end+1,:) = Curves(i).Pts(end,:);
-% end
-
+for i = 1 : length(Curves)
+    Curves(i).Pts = unique(Curves(i).Pts,'rows','stable')
 
 
 %% Inset of the extorior polygon

@@ -28,12 +28,8 @@
     grid off
     lighting gouraud
     pl3t(BoundaryStemTip,'b-','linewidth',3)
-    pl3t(Boundary_xp,'r-','linewidth',3)
     plotDot( StemTip_CT', 'g', 1.5 )
     plotDot( CDiaphysisStemTip_CT, 'r', 1.5 )
-    plotDot(PtMedialThirdOfTT)
-    plotDot( ProthOrig, 'm', 1.5 )
-    trisurf(ProsthesisEnd,'Facecolor','g','FaceAlpha',1,'edgecolor','none');
     
     
         
@@ -48,6 +44,7 @@
     hold on
     grid off
     lighting gouraud
-    pl3t(Boundary_xp_inRxp,'b-','linewidth',3)
-    pl3t(Boundary_ProsthesisTP,'r-')
-    plotDot(TTproj)
+    pl3t(BoundaryStemTip,'b-','linewidth',3)
+    plotDot( StemTip_CT', 'g', 1.5 )
+    plotDot( CDiaphysisStemTip_CT, 'r', 1.5 )
+    

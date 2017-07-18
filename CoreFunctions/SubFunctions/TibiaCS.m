@@ -378,7 +378,8 @@ Results.TpCS.Description = 'Coordinate system of the tibial plateau plan, least 
 Results.Morph.CenterAnkle = CenterAnkle;
 Results.Morph.Zdiaph = Zdiaph;
 Results.Morph.Zepi = Zepi;
-
+Results.Morph.EpiTibArtLat = EpiTibArtLat;
+Results.Morph.EpiTibArtMed = EpiTibArtMed;
 
 end
 

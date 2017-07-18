@@ -8,6 +8,7 @@ import matlab.engine
 #### Paramaters ####
 SubjectCode = str.upper(raw_input("Enter Subject Code (eg : AM_R) : "))
 if '_L' in SubjectCode :
+
     RightKnee = 0
 elif '_R' in SubjectCode :
     RightKnee = 1
@@ -62,17 +63,25 @@ else :
         subprocess.call(["gmsh", fName], shell=True)
         os.remove(fName)
         print("Mesh generated")
+        
+os.chdir(cwd+'\\CoreFunctions')
 
 eng = matlab.engine.start_matlab()
 
+os.chdir(cwd)
 # [-12.0,-8.0,-4.0,0.0,4.0,8.0,12.0]
 # [-4.5,-1.5,1.5,4.5]
 for alpha in [0.0] :
+    
+    os.chdir(cwd+'\\CoreFunctions')
+    
     if TypeProth == 2:
         T, Tanat, ML_Width , AP_Width, ProstName = eng.PositionProth2(SubjectCode,alpha,LongStem,nargout=5)
     elif TypeProth == 1 :
         T, Tanat, ML_Width , AP_Width, ProstName = eng.PositionProth1(SubjectCode,alpha,LongStem,nargout=5)
     print(ML_Width)    
+    
+    os.chdir(cwd)
 
     f = open('ScriptFreeCAD.py','r')
     filedata = f.read()
@@ -92,7 +101,8 @@ for alpha in [0.0] :
     newdata = newdata.replace("NEW_PLACEMENT_ANAT_MATRIX",Tanat)
     if LongStem != 1:
         newdata = newdata.replace("_WLS","")
-    finaldata = newdata.replace("SIZE",ProstName)
+    newdata = newdata.replace("SIZE",ProstName)
+    finaldata = newdata.replace("\\","\\\\")
 
     f = open('ScriptFreeCAD_'+SubjectCode +'.py','w')
     f.write(finaldata)
@@ -100,6 +110,8 @@ for alpha in [0.0] :
     subprocess.call(["FreeCADcmd", 'ScriptFreeCAD_'+SubjectCode +'.py'], shell=True)
 
 eng.quit()
+
+
 os.remove('ScriptFreeCAD_'+SubjectCode +'.py')
 os.rename(cwd+"\\"+"Tibia_" + SubjectCode + ".msh",cwd+"\\Output\\"+SubjectCode+"\\Tibia_" + SubjectCode + ".msh")
 os.rename(cwd+"\\"+"DistTibia_" + SubjectCode + ".msh",cwd+"\\Output\\"+SubjectCode+"\\DistTibia_" + SubjectCode + ".msh")

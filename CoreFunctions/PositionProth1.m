@@ -27,6 +27,7 @@ function [ Tstring , T_str_anat , ML_Width_xp , AP_Width_xp , ProstName] = Posit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic
 addpath(strcat(pwd,'\SubFunctions'))
+addpath(strcat(pwd,'\GraphicSubFunctions'))
 
 %% Parameters
 
@@ -121,7 +122,7 @@ AP_Width_xp = range(Boundary_xp*U_xp);
     SelectImplantSize(RootDir, ML_Width_xp, AP_Width_xp, 1, LongStem );
 
 % Adapt to the coordinate frame and leg side [Specific of the prosthesis geometry]                 
-StemTip = StemTip*[0 LegSide 0 ; 1 0 0; 0 0 -1]'; %[0 1 0 ; LegSide 0 0; 0 0 -1]
+StemTip = StemTip*[0 LegSide 0 ; 1 0 0; 0 0 -1]'; % [0 LegSide 0 ; LegSide 0 0; 0 0 -1] %[0 1 0 ; LegSide 0 0; 0 0 -1]
 Prosthesis = triangulation(Prosthesis0.ConnectivityList,transpose([0 LegSide 0 ; 1 0 0; 0 0 -1]*Prosthesis0.Points'));
 
 Start_Point = Centroid_xp-U_xp'*0.36*LegSide*AP_Width_xp+0.02*V_xp'*ML_Width_xp...
@@ -186,7 +187,7 @@ PtsProsth0 = Prosthesis0.Points;
 PtsProsth0(:,4) = ones(length(PtsProsth0),1);
 
 
-T = zeros(4,4); T(1:3,1:3) = Rp*R_xp*[0 LegSide 0 ; 1 0 0; 0 0 -1];
+T = zeros(4,4); T(1:3,1:3) = Rp*R_xp*[0 LegSide 0 ; LegSide 0 0; 0 0 -1]; %[0 LegSide 0 ; 1 0 0; 0 0 -1]
 T(:,4)=[ProthOrig';1];
 
 PtsProsthEnd = transpose(T*PtsProsth0');
@@ -217,13 +218,11 @@ fclose(fID3);
 
 Tstring =sprintf(strcat('newplace=FreeCAD.Matrix',formatSpec2),Tt(:));
 
-T_str_anat = Tstring;
+Tanat=zeros(4,4);Tanat(1:3,1:3) = CS.V*[0 LegSide 0 ; LegSide 0 0; 0 0 -1];
+Tanat(:,4)=[CS.Origin';1];
+Tanat = Tanat';
+T_str_anat = sprintf(strcat('newplaceAnat=FreeCAD.Matrix',formatSpec2),Tanat(:));
 
-% Tanat=zeros(4,4);Tanat(1:3,1:3) = Vanat*[LegSide 0 0; 0 1 0; 0 0 -1];
-% Tanat(:,4)=[ProthOrig';1];
-% Tanat = Tanat';
-% T_str_anat = sprintf(strcat('newplaceAnat=FreeCAD.Matrix',formatSpec2),Tanat(:));
-% 
 
 end
 

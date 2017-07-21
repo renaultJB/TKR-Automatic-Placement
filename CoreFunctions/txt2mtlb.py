@@ -40,9 +40,9 @@ def read_meshGMSH(file_name):
     for line in f.readlines()[N_nodes+8:N_lines-1]:
         linesplit=line.split(' ')
         if linesplit[1]=='2' :
-            XYZELMTS['N1'].append(int(linesplit[5]))
-            XYZELMTS['N2'].append(int(linesplit[6]))
-            XYZELMTS['N3'].append(int(linesplit[7]))
+            XYZELMTS['N1'].append(float(linesplit[5]))
+            XYZELMTS['N2'].append(float(linesplit[6]))
+            XYZELMTS['N3'].append(float(linesplit[7]))
     f.close()
     return XYZELMTS
 

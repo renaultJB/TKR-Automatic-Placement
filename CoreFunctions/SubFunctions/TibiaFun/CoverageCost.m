@@ -55,7 +55,9 @@ C1 = 25 * mean(exp(d).^2);  %+ exp((x(3)+0.1)^4/5)-1; %exp(d).^2-1+0.5*d % Cost 
 % Criterium 2 : Implant oriented towards the Tibial tuberosity
 % C2 = 25 * (sqrt(1-(U_TT*U_prosth')^2))
 
-C2 = (rad2deg(x(3))-rad2deg(Theta))^2;
+deltaTheta = rad2deg(x(3))-rad2deg(Theta);
+C2 = (1 - exp(-(deltaTheta)^2/8))*(deltaTheta)^2;
+
 
 rad2deg(x(3))
 rad2deg(Theta)
@@ -74,7 +76,7 @@ Ceq = -1;
 
 rad2deg(x(3))
 
-pause(0.1)
+pause(0.04)
 
 figure(1)
 plot(ProsthContourTR(:,1),ProsthContourTR(:,2))

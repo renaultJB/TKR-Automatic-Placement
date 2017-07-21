@@ -14,7 +14,10 @@ function [ TR1, TR2 ] = ReadCheckMesh( MeshFileName1, MeshFileName2 )
 
 XYZELMTS = py.txt2mtlb.read_meshGMSH(MeshFileName1);
 Pts2D = [cell2mat(cell(XYZELMTS{'X'}))' cell2mat(cell(XYZELMTS{'Y'}))' cell2mat(cell(XYZELMTS{'Z'}))'];
-Elmts2D = double([cell2mat(cell(XYZELMTS{'N1'}))' cell2mat(cell(XYZELMTS{'N2'}))' cell2mat(cell(XYZELMTS{'N3'}))']);
+Elmts2D = [cell2mat(cell(XYZELMTS{'N1'}))' cell2mat(cell(XYZELMTS{'N2'}))' cell2mat(cell(XYZELMTS{'N3'}))'];
+% Elmts2D = double([cell2mat(cellfun(@int,cell(XYZELMTS{'N1'})))'...
+%     cell2mat(cellfun(@int,cell(XYZELMTS{'N2'})))'...
+%     cell2mat(cellfun(@int,cell(XYZELMTS{'N3'})))']);
 
 
 % Verify that normal are outward-pointing and fix if not
@@ -25,7 +28,11 @@ if nargin >1 && nargout==nargin
     %Read distal Tibia
     XYZELMTS = py.txt2mtlb.read_meshGMSH(MeshFileName2);
     Pts2D = [cell2mat(cell(XYZELMTS{'X'}))' cell2mat(cell(XYZELMTS{'Y'}))' cell2mat(cell(XYZELMTS{'Z'}))'];
-    Elmts2D = double([cell2mat(cell(XYZELMTS{'N1'}))' cell2mat(cell(XYZELMTS{'N2'}))' cell2mat(cell(XYZELMTS{'N3'}))']);
+    Elmts2D = [cell2mat(cell(XYZELMTS{'N1'}))' cell2mat(cell(XYZELMTS{'N2'}))' cell2mat(cell(XYZELMTS{'N3'}))'];
+% 
+%     Elmts2D = double([cell2mat(cellfun(@int,cell(XYZELMTS{'N1'})))'...
+%         cell2mat(cellfun(@int,cell(XYZELMTS{'N2'})))'...
+%         cell2mat(cellfun(@int,cell(XYZELMTS{'N3'})))']);
 
     % Verify that normal are outward-pointing and fix if not
     Elmts2D = fixNormals( Pts2D, Elmts2D );

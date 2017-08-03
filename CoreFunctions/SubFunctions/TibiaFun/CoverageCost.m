@@ -56,11 +56,12 @@ C1 = 25 * mean(exp(d).^2);  %+ exp((x(3)+0.1)^4/5)-1; %exp(d).^2-1+0.5*d % Cost 
 % C2 = 25 * (sqrt(1-(U_TT*U_prosth')^2))
 
 deltaTheta = rad2deg(x(3))-rad2deg(Theta);
-C2 = (1 - exp(-(deltaTheta)^2/8))*(deltaTheta)^2;
+C2 = (1 - exp(-(deltaTheta)^2/64))*(deltaTheta)^2;
 
 
-rad2deg(x(3))
-rad2deg(Theta)
+% rad2deg(x(3))
+% rad2deg(Theta)
+
 % Criterium 3 : Area outside the tibial cut section;
 % C3 = AreaOut
 
@@ -76,17 +77,17 @@ Ceq = -1;
 
 rad2deg(x(3))
 
-pause(0.04)
-
-figure(1)
-plot(ProsthContourTR(:,1),ProsthContourTR(:,2))
-hold on
-plot(Boundary_xp_inRxp(:,1),Boundary_xp_inRxp(:,2),'.-k')
-plot(TT(1),TT(2),'rs')
-plot([TT(1);x(1)],[TT(2);x(2)],'r.-')
-plot([x(1);x(1)+20*U_prosth(1)],[x(2);x(2)+20*U_prosth(2)],'b*-')
-axis equal
-hold off
+% pause(0.04)
+% 
+% figure(1)
+% plot(ProsthContourTR(:,1),ProsthContourTR(:,2))
+% hold on
+% plot(Boundary_xp_inRxp(:,1),Boundary_xp_inRxp(:,2),'.-k')
+% plot(TT(1),TT(2),'rs')
+% plot([TT(1);x(1)],[TT(2);x(2)],'r.-')
+% plot([x(1);x(1)+20*U_prosth(1)],[x(2);x(2)+20*U_prosth(2)],'b*-')
+% axis equal
+% hold off
 
 
 end

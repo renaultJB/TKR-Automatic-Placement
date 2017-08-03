@@ -26,8 +26,9 @@ function [ Tstring , T_str_anat , ML_Width_xp , AP_Width_xp , ProstName] = Posit
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic
-addpath(strcat(pwd,'\SubFunctions'))
-addpath(strcat(pwd,'\GraphicSubFunctions'))
+% addpath(strcat(pwd,'\SubFunctions'))
+% addpath(strcat(pwd,'\GraphicSubFunctions'))
+
 
 %% Parameters
 
@@ -38,23 +39,40 @@ LegSide = 0;
 % Prescribed Posterior slope of the implant relative to mechanical axis
 beta0 = 5; 
 
+addpath(genpath(strcat(pwd,'\SubFunctions')))
+addpath(genpath(strcat(pwd,'\GraphicSubFunctions')))
 
 %% Get file names and parse the mesh files to matlab
 
-cd ../
-RootDir = pwd;
-ProxTibMeshFile = strcat(pwd,'\Tibia_',SubjectCode,'.msh');
-DistTibMeshFile = strcat(pwd,'\DistTibia_',SubjectCode,'.msh');
-cd ./CoreFunctions
 
-%% Read mesh files of the proximal an distal tibia
-[ ProxTib, DistTib ] = ReadCheckMesh( ProxTibMeshFile, DistTibMeshFile );
+RootDir = fileparts(pwd);
+ProxTibMeshFile = strcat(RootDir,'\Tibia_',SubjectCode,'.msh');
+DistTibMeshFile = strcat(RootDir,'\DistTibia_',SubjectCode,'.msh');
 
-%% Construct the coordinates system of the tibia
-[ CS ] = TibiaCS( ProxTib , DistTib);
 
-%% Find the tibial tuberosity of the Tibia, this also permits the identification of the legside  
-[ PtMedialThirdOfTT, LegSideName, ~, ~ ] = TibialTuberosityPos(ProxTib, CS , 0);
+pwd
+
+%% Try to find the ".mat" file containing the mesh and associated Coordinate system
+
+TmpFileName = strcat(RootDir,'\tempFiles\',SubjectCode,'.mat');
+
+TmpFileExist = exist(TmpFileName,'file');
+
+if TmpFileExist ~= 0
+    load(TmpFileName)
+else
+    %% Read mesh files of the proximal an distal tibia
+    [ ProxTib, DistTib ] = ReadCheckMesh( ProxTibMeshFile, DistTibMeshFile );
+
+    %% Construct the coordinates system of the tibia
+    [ CS ] = TibiaCS( ProxTib , DistTib);
+
+    %% Find the tibial tuberosity of the Tibia, this also permits the identification of the legside  
+    [ PtMedialThirdOfTT, LegSideName, ~, ~ ] = TibialTuberosityPos(ProxTib, CS , 0);
+    
+    %% Save Mesh and associated CS
+    save(TmpFileName,'ProxTib','DistTib','CS','PtMedialThirdOfTT','LegSideName') 
+end
 
 if LegSideName == 'R'
     Right_Knee = 1;
@@ -190,12 +208,14 @@ PtsProsth0(:,4) = ones(length(PtsProsth0),1);
 T = zeros(4,4); T(1:3,1:3) = Rp*R_xp*[0 LegSide 0 ; LegSide 0 0; 0 0 -1]; %[0 LegSide 0 ; 1 0 0; 0 0 -1]
 T(:,4)=[ProthOrig';1];
 
-PtsProsthEnd = transpose(T*PtsProsth0');
-PtsProsthEnd(:,4)=[];
 
-ProsthesisEnd = triangulation(Prosthesis0.ConnectivityList,PtsProsthEnd);
+%% Plot Deformation with implanted Tibial Implant
+% PtsProsthEnd = transpose(T*PtsProsth0');
+% PtsProsthEnd(:,4)=[];
 
-PlotTibiaDeformation(ProxTib, DistTib, ProsthesisEnd,  CS )
+% ProsthesisEnd = triangulation(Prosthesis0.ConnectivityList,PtsProsthEnd);
+
+% PlotTibiaDeformation(ProxTib, DistTib, ProsthesisEnd,  CS )
 
 
 fID3=fopen(['Output_' SubjectCode '_alpha' num2str(alpha) '.txt'],'w');

@@ -31,20 +31,14 @@ tic
 
 
 %% Parameters
-
-% LegSide Identify the leg side, this is latter done by the
-% "TibialTuberosityPos" function
-LegSide = 0;
-
 % Prescribed Posterior slope of the implant relative to mechanical axis
 beta0 = 5;
 
+%% Files and folders handling
 addpath(genpath(strcat(pwd,'\SubFunctions')))
 addpath(genpath(strcat(pwd,'\GraphicSubFunctions')))
 
-%% Get file names and parse the mesh files to matlab
-
-
+% Get file names and parse the mesh files to matlab
 RootDir = fileparts(pwd);
 ProxTibMeshFile = strcat(RootDir,'\Tibia_',SubjectCode,'.msh');
 DistTibMeshFile = strcat(RootDir,'\DistTibia_',SubjectCode,'.msh');
@@ -99,9 +93,7 @@ Ztp__ProjmechXZ = Ztp__ProjmechXZ/norm(Ztp__ProjmechXZ);
 Angle_Slope = LegSide*rad2deg(asin(Ztp__ProjmechXZ'*CS.X));
 
 % Prescribe slope for the prosthesis 
-
 beta = -LegSide*beta0;
-
 
 % Determine offset of Condyle plan to cutting plan
 distML = abs(atan(deg2rad(-alpha)) - atan(deg2rad(Angle_Varus)))*ML_Width/2 ;
@@ -153,29 +145,20 @@ CDiaphysisStemTip_CT = PlanPolygonCentroid3D(BoundaryStemTip); % Center of bone 
 
 
 %% Optimization Stem Tip Position made in the prosthesis coordinate system
-% Boundary_xp_inRxp = transpose(R_xp'*bsxfun(@minus,Boundary_xp,Start_Point)');
-% Boundary_xp_inRxp = Boundary_xp_inRxp(1:7:end-1,:); 
-% CDiaphysisStemTip = transpose(R_xp'*(CDiaphysisStemTip_CT-Start_Point)');
-
-
 Boundary_xp_inRxp = transpose(R_xp'*bsxfun(@minus,Boundary_xp,Oxp)');
 Boundary_xp_inRxp = Boundary_xp_inRxp(1:7:end-1,:); 
 CDiaphysisStemTip = transpose(R_xp'*(CDiaphysisStemTip_CT-Oxp)');
 
-
 CurvesProsthesisTP = TriPlanIntersect(Prosthesis,[10^-6; 10^-6; 1],-2); %10^-6 to avoid numerical error
 Boundary_ProsthesisTP = [CurvesProsthesisTP.Pts(1:5:end-1,:) ; CurvesProsthesisTP.Pts(end,:)];
 
-% TTproj = transpose( R_xp'*((PtMedialThirdOfTT-Start_Point)'-(PtMedialThirdOfTT-Start_Point)*Nxp*Nxp));
-% TTproj = PtMedialThirdOfTT' + (Oxp - PtMedialThirdOfTT)*Nxp/(Nxp'*CS.Z)*CS.Z;
 
 TTproj = transpose( R_xp'*( PtMedialThirdOfTT' + (Oxp - PtMedialThirdOfTT)*Nxp/(Nxp'*CS.Z)*CS.Z - Oxp'));
 
-% TTproj2 = PtMedialThirdOfTT'-(PtMedialThirdOfTT-Start_Point)*Nxp*Nxp
-
 %% Optimisation of the placement of the prosthesis
     % Limit overhang
-    % orient prosthesis toward the tibial tuberosity
+    % Orient prosthesis toward the tibial tuberosity
+    % Orient prosthesis in the CS.X axis
     % if long stem, ensure that the stem tip is centered relative to the
     % diaphysis
     

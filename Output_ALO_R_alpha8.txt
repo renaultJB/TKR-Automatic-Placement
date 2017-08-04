@@ -1,0 +1,18 @@
+name= "ALO_R" 
+Axe Méca X : 
+ 0.21057015 -0.97737849 0.01978641  
+Axe Méca Y : 
+ 0.97638938 0.21126899 0.04504661  
+Axe Méca Z : 
+ -0.04820784 0.00983377 0.99878892  
+Normal plateau tibial : 
+ -0.20161796 0.06465320 0.97732807  
+Angle Diaphise/Plateau tibial plan Frontal (angle varus) : 
+ 3.44   
+Angle Diaphise/Plateau tibial plan Sagittal (pente tibial) : 
+ -3.33   
+Partie Python pour freeCAD 
+ 
+obj0=App.ActiveDocument.ActiveObject 
+obj = FreeCAD.getDocument("Unnamed").getObject("Part__Feature") 
+newplace=FreeCAD.Matrix(0.96839152,-0.14686068,0.20161796,-79.74741848,-0.13645470,-0.98853431,-0.06465320,92.45146436,0.20880128,0.03509789,-0.97732807,-447.27821217,0.00000000,0.00000000,0.00000000,1.00000000)

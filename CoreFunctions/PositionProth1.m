@@ -6,7 +6,7 @@ function [ Tstring , T_str_anat , ML_Width_xp , AP_Width_xp , ProstName] = Posit
 %
 % Inputs :
 %   SubjectCode : 'char' Code of the subject
-%   alpha : 'float' varus angle for the placement of prosthesis
+%   alpha : 'float' valgus angle for the placement of prosthesis
 %   LongStem : 'binary' Decide if a long stem should be used or not
 %
 % Outputs :
@@ -37,7 +37,7 @@ tic
 LegSide = 0;
 
 % Prescribed Posterior slope of the implant relative to mechanical axis
-beta0 = 5; 
+beta0 = 5;
 
 addpath(genpath(strcat(pwd,'\SubFunctions')))
 addpath(genpath(strcat(pwd,'\GraphicSubFunctions')))
@@ -49,8 +49,6 @@ RootDir = fileparts(pwd);
 ProxTibMeshFile = strcat(RootDir,'\Tibia_',SubjectCode,'.msh');
 DistTibMeshFile = strcat(RootDir,'\DistTibia_',SubjectCode,'.msh');
 
-
-pwd
 
 %% Try to find the ".mat" file containing the mesh and associated Coordinate system
 
@@ -106,21 +104,18 @@ beta = -LegSide*beta0;
 
 
 % Determine offset of Condyle plan to cutting plan
-distML = abs(atan(deg2rad(alpha - Angle_Varus)))*ML_Width/2 ;
-distAP = abs(atan(deg2rad(Angle_Slope-abs(beta))))*ML_Width/4;
+distML = abs(atan(deg2rad(-alpha)) - atan(deg2rad(Angle_Varus)))*ML_Width/2 ;
+distAP = abs(atan(deg2rad(Angle_Slope))-atan(deg2rad(abs(beta))))*AP_Width/2;
 
 % Define the Cutting plan and its associated CS (U_xp, V_xp, Nxp)
-beta = -LegSide*5;
 
 Nxp = rot(CS.Y,beta)*rot(CS.X,alpha)*CS.Z;
-d_xp = - ( CS.Origin - (max(distML,distAP)+5)*Nxp')*Nxp;
+d_xp = - ( CS.Origin - (max(distML,distAP)+3.5)*Nxp')*Nxp;
 
 V_xp = CS.Y - (CS.Y'*Nxp)*Nxp; V_xp= V_xp / norm(V_xp);
 U_xp = cross(V_xp,Nxp);
 
 R_xp = [U_xp V_xp Nxp];
-
-
 
 
 %% Obtention of Normal of the cutting plane (Nrml_xp)
@@ -144,7 +139,9 @@ StemTip = StemTip*[0 LegSide 0 ; 1 0 0; 0 0 -1]'; % [0 LegSide 0 ; LegSide 0 0; 
 Prosthesis = triangulation(Prosthesis0.ConnectivityList,transpose([0 LegSide 0 ; 1 0 0; 0 0 -1]*Prosthesis0.Points'));
 
 Start_Point = Centroid_xp-U_xp'*0.36*LegSide*AP_Width_xp+0.02*V_xp'*ML_Width_xp...
-    +(Thickness+1.5)*Nxp'; %Prosthesis thickness +1.5 cement thickness      +LegSide*alpha*Vpc(:,1)'
+    +(Thickness+1.5)*Nxp'; %Prosthesis thickness +1.5 cement thickness
+
+Oxp = Start_Point -(Thickness+1.5)*Nxp';
 
 % Move Stem Tip in CT Cooridante frame
 StemTip_CT = R_xp*StemTip' + Start_Point';
@@ -156,15 +153,25 @@ CDiaphysisStemTip_CT = PlanPolygonCentroid3D(BoundaryStemTip); % Center of bone 
 
 
 %% Optimization Stem Tip Position made in the prosthesis coordinate system
-Boundary_xp_inRxp = transpose(R_xp'*bsxfun(@minus,Boundary_xp,Start_Point)');
-Boundary_xp_inRxp = [Boundary_xp_inRxp(1:7:end-1,:)]; 
-CDiaphysisStemTip = transpose(R_xp'*(CDiaphysisStemTip_CT-Start_Point)');
+% Boundary_xp_inRxp = transpose(R_xp'*bsxfun(@minus,Boundary_xp,Start_Point)');
+% Boundary_xp_inRxp = Boundary_xp_inRxp(1:7:end-1,:); 
+% CDiaphysisStemTip = transpose(R_xp'*(CDiaphysisStemTip_CT-Start_Point)');
+
+
+Boundary_xp_inRxp = transpose(R_xp'*bsxfun(@minus,Boundary_xp,Oxp)');
+Boundary_xp_inRxp = Boundary_xp_inRxp(1:7:end-1,:); 
+CDiaphysisStemTip = transpose(R_xp'*(CDiaphysisStemTip_CT-Oxp)');
 
 
 CurvesProsthesisTP = TriPlanIntersect(Prosthesis,[10^-6; 10^-6; 1],-2); %10^-6 to avoid numerical error
 Boundary_ProsthesisTP = [CurvesProsthesisTP.Pts(1:5:end-1,:) ; CurvesProsthesisTP.Pts(end,:)];
 
-TTproj = transpose( R_xp'*((PtMedialThirdOfTT-Start_Point)'-(PtMedialThirdOfTT-Start_Point)*Nxp*Nxp));
+% TTproj = transpose( R_xp'*((PtMedialThirdOfTT-Start_Point)'-(PtMedialThirdOfTT-Start_Point)*Nxp*Nxp));
+% TTproj = PtMedialThirdOfTT' + (Oxp - PtMedialThirdOfTT)*Nxp/(Nxp'*CS.Z)*CS.Z;
+
+TTproj = transpose( R_xp'*( PtMedialThirdOfTT' + (Oxp - PtMedialThirdOfTT)*Nxp/(Nxp'*CS.Z)*CS.Z - Oxp'));
+
+% TTproj2 = PtMedialThirdOfTT'-(PtMedialThirdOfTT-Start_Point)*Nxp*Nxp
 
 %% Optimisation of the placement of the prosthesis
     % Limit overhang
@@ -172,10 +179,10 @@ TTproj = transpose( R_xp'*((PtMedialThirdOfTT-Start_Point)'-(PtMedialThirdOfTT-S
     % if long stem, ensure that the stem tip is centered relative to the
     % diaphysis
     
-    
+     
 % Geometric optimization problem
 lb = [-15,-15,-15];
-ub = [15,15,15];
+ub = [15,15,15];  
 A = [];
 b = [];
 Aeq = [];

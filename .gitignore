@@ -9,4 +9,5 @@ Output/
 *.asv
 *.pyc
 *.stl
-
+output_*.txt
+Output_*.txt

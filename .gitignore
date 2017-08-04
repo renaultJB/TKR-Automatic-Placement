@@ -3,11 +3,13 @@ gmsh/
 Notes/
 testData/
 Output/
+tempFiles/
 *.msh
 *.stp
 *.step
 *.asv
 *.pyc
 *.stl
+*.mat
 output_*.txt
 Output_*.txt

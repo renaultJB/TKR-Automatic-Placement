@@ -130,6 +130,9 @@ AP_Width_xp = range(Boundary_xp*U_xp);
 StemTip = StemTip*[0 LegSide 0 ; 1 0 0; 0 0 -1]'; % [0 LegSide 0 ; LegSide 0 0; 0 0 -1] %[0 1 0 ; LegSide 0 0; 0 0 -1]
 Prosthesis = triangulation(Prosthesis0.ConnectivityList,transpose([0 LegSide 0 ; 1 0 0; 0 0 -1]*Prosthesis0.Points'));
 
+Elmts2D = fixNormals( Prosthesis.Points, Prosthesis.ConnectivityList );
+Prosthesis = triangulation(Elmts2D,Prosthesis.Points);
+
 Start_Point = Centroid_xp-U_xp'*0.36*LegSide*AP_Width_xp+0.02*V_xp'*ML_Width_xp...
     +(Thickness+1.5)*Nxp'; %Prosthesis thickness +1.5 cement thickness
 
@@ -206,7 +209,7 @@ PtsProsthEnd(:,4)=[];
 ProsthesisEnd = triangulation(Prosthesis0.ConnectivityList,PtsProsthEnd);
 
 
-[ CtrltyScore, Tabl ] = CentralityScore(ProxTib, Prosthesis, ProsthesisEnd, StemTip);
+[ CtrltyScore, Tabl ] = CentralityScore(ProxTib, Prosthesis, ProsthesisEnd, StemTip, LegSide);
 writetable(Tabl,['Centrality_' SubjectCode '_alpha' num2str(alpha) '.txt'])
 
 % PlotTibiaDeformation(ProxTib, DistTib, ProsthesisEnd,  CS )

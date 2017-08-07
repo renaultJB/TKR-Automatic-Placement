@@ -1,11 +1,11 @@
-function [ CentralityScore, T ] = CentralityScore(ProxTib, Prosth0, Prosth, StemTip)
+function [ CentralityScore, T ] = CentralityScore(ProxTib, Prosth0, Prosth, StemTip, LegSide)
 % CENTRALITYSCORE evaluate the centrality of the stem tip relative to the 
 % Tibial Bone
 
 %% 1st Identify the ring of the the stem tip
 
-IdElmtsOk = find(Prosth0.faceNormal*[0 0 1]'< 0.985 &...
-    Prosth0.faceNormal*[0 0 1]' > 0.18 &...
+IdElmtsOk = find(Prosth0.faceNormal*[0 0 -LegSide]'< 0.985 &...
+    Prosth0.faceNormal*[0 0 -LegSide]' > 0.18 &...
     Prosth0.incenter*[0 0 1]' < 0.951 * StemTip(3));
 
 Ring = TriReduceMesh(Prosth,IdElmtsOk);

@@ -71,7 +71,7 @@ eng = matlab.engine.start_matlab()
 os.chdir(cwd)
 # [-12.0,-8.0,-4.0,0.0,4.0,8.0,12.0]
 # [-4.5,-1.5,1.5,4.5]
-for alpha in [-8.0, -6.0, -4.0, -2.0 , 0.0 , 2.0 , 4.0 , 6.0, 8.0] :
+for alpha in [-8.0, -6.0, -4.0, -2.0 , 0.0 , 2.0 , 4.0] :
     
     os.chdir(cwd+'\\CoreFunctions')
     

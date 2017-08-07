@@ -13,3 +13,4 @@ tempFiles/
 *.mat
 output_*.txt
 Output_*.txt
+Centrality_*.txt

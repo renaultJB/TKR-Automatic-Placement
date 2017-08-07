@@ -200,10 +200,14 @@ T(:,4)=[ProthOrig';1];
 
 
 %% Plot Deformation with implanted Tibial Implant
-% PtsProsthEnd = transpose(T*PtsProsth0');
-% PtsProsthEnd(:,4)=[];
+PtsProsthEnd = transpose(T*PtsProsth0');
+PtsProsthEnd(:,4)=[];
 
-% ProsthesisEnd = triangulation(Prosthesis0.ConnectivityList,PtsProsthEnd);
+ProsthesisEnd = triangulation(Prosthesis0.ConnectivityList,PtsProsthEnd);
+
+
+[ CtrltyScore, Tabl ] = CentralityScore(ProxTib, Prosthesis, ProsthesisEnd, StemTip);
+writetable(Tabl,['Centrality_' SubjectCode '_alpha' num2str(alpha) '.txt'])
 
 % PlotTibiaDeformation(ProxTib, DistTib, ProsthesisEnd,  CS )
 
@@ -217,6 +221,11 @@ fprintf(fID3,'Axe Méca Z : \r\n %4.8f %4.8f %4.8f  \r\n', CS.Z);
 fprintf(fID3,'Normal plateau tibial : \r\n %4.8f %4.8f %4.8f  \r\n', Nxp);
 fprintf(fID3,'Angle Diaphise/Plateau tibial plan Frontal (angle varus) : \r\n %2.2f   \r\n', Angle_Varus);
 fprintf(fID3,'Angle Diaphise/Plateau tibial plan Sagittal (pente tibial) : \r\n %2.2f   \r\n', Angle_Slope);
+
+fprintf(fID3,'Centrality Scores CV : \r\n %2.2f   \r\n', CtrltyScore.CV);
+fprintf(fID3,'Centrality Scores Min/Max : \r\n %2.2f   \r\n', CtrltyScore.MinMax);
+fprintf(fID3,'Centrality Scores Min/Mean : \r\n %2.2f   \r\n', CtrltyScore.MinMean);
+
 fprintf(fID3,'Partie Python pour freeCAD \r\n \r\n');
 fprintf(fID3,'obj0=App.ActiveDocument.ActiveObject \r\n');
 fprintf(fID3,'obj = FreeCAD.getDocument("Unnamed").getObject("Part__Feature") \r\n');

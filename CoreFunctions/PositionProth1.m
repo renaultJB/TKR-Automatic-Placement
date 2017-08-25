@@ -214,9 +214,9 @@ writetable(Tabl,['Centrality_' SubjectCode '_alpha' num2str(alpha) '.txt'])
 
 % PlotTibiaDeformation(ProxTib, DistTib, ProsthesisEnd,  CS )
 
-
 fID3=fopen(['Output_' SubjectCode '_alpha' num2str(alpha) '.txt'],'w');
-fprintf(fID3,'name= "%s" \r\n', SubjectCode);
+fprintf(fID3,'name= "%s" \r\n', SubjectCode );
+fprintf(fID3,'ZALT= \r\n %4.8f \r\n', StemTip_CT(3)+16 );
 % fprintf(fID3,'Axe Diaphise : \r\n %4.8f %4.8f %4.8f  \r\n', Zanat);
 fprintf(fID3,'Axe Méca X : \r\n %4.8f %4.8f %4.8f  \r\n', CS.X);
 fprintf(fID3,'Axe Méca Y : \r\n %4.8f %4.8f %4.8f  \r\n', CS.Y);

@@ -71,7 +71,7 @@ eng = matlab.engine.start_matlab()
 os.chdir(cwd)
 # [-12.0,-8.0,-4.0,0.0,4.0,8.0,12.0]
 # [-4.5,-1.5,1.5,4.5]
-for alpha in [-8.0, -6.0, -4.0, -2.0 , 0.0 , 2.0 , 4.0] :
+for alpha in [-10.0, -7.5, -5.0, -2.5 , 0.0 , 2.5 , 5.0] :
     
     os.chdir(cwd+'\\CoreFunctions')
     
@@ -108,6 +108,17 @@ for alpha in [-8.0, -6.0, -4.0, -2.0 , 0.0 , 2.0 , 4.0] :
     f.write(finaldata)
     f.close()
     subprocess.call(["FreeCADcmd", 'ScriptFreeCAD_'+SubjectCode +'.py'], shell=True)
+    
+    if alpha%1 == 0 :
+        os.rename(cwd+"\\"+"Output_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Output_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt")
+        os.rename(cwd+"\\"+"Centrality_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Centrality_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt")
+    else :
+        os.rename(cwd+"\\"+"Output_" + SubjectCode + "_alpha" + str(alpha)+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Output_" + SubjectCode + "_alpha" + str(alpha)+ ".txt")
+        os.rename(cwd+"\\"+"Centrality_" + SubjectCode + "_alpha" + str(alpha)+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Centrality_" + SubjectCode + "_alpha" + str(alpha)+ ".txt")
+        
+            
+
+
 
 eng.quit()
 

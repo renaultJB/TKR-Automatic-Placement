@@ -37,6 +37,9 @@ for xAlt = 0.2 : 0.1 : 0.8
     
     Weights = Lim1 + Li;
     
+    
+    Weights(end+1) = Weights(1);
+    
     CSPtsPos = CSPtsRtC0(CSPtsRtC0(:,1)>0,:);
     CSPtsNeg = CSPtsRtC0(CSPtsRtC0(:,1)<0,:);
     
@@ -81,8 +84,13 @@ for xAlt = 0.2 : 0.1 : 0.8
     while abs(IDX-IDX0)>1
         IDX0 = IDX;
         
-        [~,IA,~] = intersect(CSPtsRtC0(1:end-1,:),PtsOnTT0,'rows','stable');
+%         [~,IA,~] = intersect(CSPtsRtC0(1:end-1,:),PtsOnTT0,'rows','stable');
+        [~,IA,~] = intersect(CSPtsRtC0,PtsOnTT0,'rows','stable');
+%         IA = unique(IA,'rows','stable');
         WeightPtsTT = Weights(IA,:);      
+        
+        length(IA)
+        length(PtsOnTT0)
         
         WeightPtsTT = WeightPtsTT/sum(WeightPtsTT);
         PtMeanTT = sum([WeightPtsTT WeightPtsTT WeightPtsTT].*PtsOnTT0,1);
@@ -90,7 +98,7 @@ for xAlt = 0.2 : 0.1 : 0.8
         IDX = knnsearch(CSPtsRtC0,PtMeanTT);
         PtTT = CSPtsRtC0(IDX,:);
         UTT = PtTT'/norm(PtTT);
-        PtsOnTT = unique(CSPtsRtC0(CSPtsRtC0*UTT>0.90*norm(PtTT),:),'rows');
+        PtsOnTT = unique(CSPtsRtC0(CSPtsRtC0*UTT>0.90*norm(PtTT),:),'rows','stable');
         
         PtsOnTTEnd  = unique([PtsOnTTEnd;PtsOnTT],'rows','stable');
         

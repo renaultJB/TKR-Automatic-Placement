@@ -51,8 +51,20 @@ RowNames = {'Xring';'Yring';'Zring';'Xtib';'Ytib';'Ztib';'Distance'};
 T = table(Xring,Yring,Zring,Xtib,Ytib,Ztib,Distance,'VariableNames',RowNames);
 
 
-
-%% Plot
+ 
+% Plot
+% figure()
+% trisurf(ProxTibLayer,'Facecolor',[0.65    0.65    0.6290],'FaceAlpha',0.5,'edgecolor','none'); % 0.8,0.8,0.85
+% hold on
+% axis equal
+% trisurf(Ring,'Facecolor','r','FaceAlpha',0.5,'edgecolor','none'); % 0.8,0.8,0.85
+% light('Position',mean(Ring.Points) + [0 0 300],'Style','local')
+% light('Position',mean(Ring.Points) + [100 -100 100],'Style','local')
+% light('Position',mean(Ring.Points) + [-100 100 -100],'Style','local')
+% light('Position',mean(Ring.Points) + [-100 -100 -100],'Style','local')
+% hold on
+% grid off
+% lighting gouraud
 % 
 % hold on 
 % for i = 1:length(Xring)

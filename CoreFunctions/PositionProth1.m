@@ -40,8 +40,7 @@ addpath(genpath(strcat(pwd,'\GraphicSubFunctions')))
 
 % Get file names and parse the mesh files to matlab
 RootDir = fileparts(pwd);
-ProxTibMeshFile = strcat(RootDir,'\Tibia_',SubjectCode,'.msh');
-DistTibMeshFile = strcat(RootDir,'\DistTibia_',SubjectCode,'.msh');
+
 
 
 %% Try to find the ".mat" file containing the mesh and associated Coordinate system
@@ -53,9 +52,12 @@ TmpFileExist = exist(TmpFileName,'file');
 if TmpFileExist ~= 0
     load(TmpFileName)
 else
+    ProxTibMeshFile = strcat(RootDir,'\Tibia_',SubjectCode,'.msh');
+    DistTibMeshFile = strcat(RootDir,'\DistTibia_',SubjectCode,'.msh');
+    
     %% Read mesh files of the proximal an distal tibia
     [ ProxTib, DistTib ] = ReadCheckMesh( ProxTibMeshFile, DistTibMeshFile );
-
+    
     %% Construct the coordinates system of the tibia
     [ CS ] = TibiaCS( ProxTib , DistTib);
 
@@ -183,10 +185,12 @@ if abs(StemTip(3))>100
     fcon = @(x)CoverageCost(x, Boundary_xp_inRxp, Boundary_ProsthesisTP , TTproj);
     x = fmincon(f,x0,A,b,Aeq,beq,lb,ub,fcon);
 else
-    f = @(x)CoverageCost(x, Boundary_xp_inRxp, Boundary_ProsthesisTP , TTproj);  % C or CDiaphysisStemTip
-    options = optimoptions(@fminunc,'Algorithm','quasi-newton','MaxFunctionEvaluations',500);
-    [x,fval] = fminunc(f,x0,options);
+%     f = @(x)CoverageCost(x, Boundary_xp_inRxp, Boundary_ProsthesisTP , TTproj);  % C or CDiaphysisStemTip
+%     options = optimoptions(@fminunc,'Algorithm','quasi-newton','MaxFunctionEvaluations',500);
+%     [x,fval,history] = fminunc(f,x0,options);
+    [ x,fval,history ] = problem_CoverageTT( x0, Boundary_xp_inRxp, Boundary_ProsthesisTP , TTproj );
 end
+
 
 
 ProthOrig = Start_Point + x(1)*U_xp' + x(2)*V_xp';
@@ -207,6 +211,8 @@ PtsProsthEnd = transpose(T*PtsProsth0');
 PtsProsthEnd(:,4)=[];
 
 ProsthesisEnd = triangulation(Prosthesis0.ConnectivityList,PtsProsthEnd);
+
+PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, Nxp, R_xp, LegSide, d_xp, CS, PtMedialThirdOfTT )
 
 
 [ CtrltyScore, Tabl ] = CentralityScore(ProxTib, Prosthesis, ProsthesisEnd, StemTip, LegSide);
@@ -238,12 +244,12 @@ PlotTibiaDeformation(ProxTib, DistTib, ProsthesisEnd,  CS )
 % fprintf(fID3,formatSpec2,Tt(:));
 % fclose(fID3);
 
-Tstring =sprintf(strcat('newplace=FreeCAD.Matrix',formatSpec2),Tt(:));
-
-Tanat=zeros(4,4);Tanat(1:3,1:3) = CS.V*[0 LegSide 0 ; LegSide 0 0; 0 0 -1];
-Tanat(:,4)=[CS.Origin';1];
-Tanat = Tanat';
-T_str_anat = sprintf(strcat('newplaceAnat=FreeCAD.Matrix',formatSpec2),Tanat(:));
+% Tstring =sprintf(strcat('newplace=FreeCAD.Matrix',formatSpec2),T(:));
+% 
+% Tanat=zeros(4,4);Tanat(1:3,1:3) = CS.V*[0 LegSide 0 ; LegSide 0 0; 0 0 -1];
+% Tanat(:,4)=[CS.Origin';1];
+% Tanat = Tanat';
+% T_str_anat = sprintf(strcat('newplaceAnat=FreeCAD.Matrix',formatSpec2),Tanat(:));
 
 
 end

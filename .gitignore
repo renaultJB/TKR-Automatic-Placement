@@ -11,6 +11,8 @@ tempFiles/
 *.pyc
 *.stl
 *.mat
+*.avi
+*.mp4
 output_*.txt
 Output_*.txt
 Centrality_*.txt

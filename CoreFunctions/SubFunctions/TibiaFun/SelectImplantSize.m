@@ -8,7 +8,7 @@ switch Prosth_Type
     case 1
         Type = {'S4','S5','S6'};
         Widths = [66.25 47; 75 47;75 61];
-        Thickness = 5.5;
+        Thickness = 4;
     case 2
         Type = {'S4','S5','S6','S7'};
         Widths = [67 42.8; 67 46.4;67 46.8;76 50.5;76 55.5];

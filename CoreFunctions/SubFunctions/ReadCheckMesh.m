@@ -38,7 +38,7 @@ if nargin >1 && nargout==nargin
     Elmts2D = fixNormals( Pts2D, Elmts2D );
     TR2 = triangulation(Elmts2D,Pts2D);
 elseif nargin+nargout > 2
-    msg = 'Error : Number of inputs and outputs are not consistent';
+    msg = 'Error : Number of inputs and outputs are not consistent. You must have one input and one output or 2 inputs and 2 outputs';
     error(msg)   
 end
 

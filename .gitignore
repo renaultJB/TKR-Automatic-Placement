@@ -13,6 +13,7 @@ tempFiles/
 *.mat
 *.avi
 *.mp4
+*.db
 output_*.txt
 Output_*.txt
 Centrality_*.txt

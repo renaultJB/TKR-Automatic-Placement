@@ -1,11 +1,30 @@
-function [ PtMedialThirdOfTT, LegSide, PtsMedThird, PtsTT ] = TibialTuberosityPos(ProxTib, CS , plots)
+function [ PtMedialThirdOfTT, LegSide, PtsMedThird, PtsTT, PtMiddleOfTT ] = TibialTuberosityPos(ProxTib, CS , plots)
+%--------------------------------------------------------------------------
 % TibialTuberosityPos : Find a Point on medial third of the tibial
-% tuberosity
+% tubercule
 % Paired with CSTibia.m the script can identify id the tibia is from a
 % right or a left leg
-% Lexic :
-% TT = Tubial Tuberosity
-
+%
+%   Lexic :
+%       TT ? Tubial Tubercule
+%       Med ? Medial
+%       CS ? Coordinate system
+%   Inputs:
+%   - Proxtib : Triangulation object representing the tibia bone
+%   - CS : A structure of the constructed coordinate system associated to 
+%          the tibia bone
+%   - plots : a boolean, '1' to plot results, '0' to not plot
+%
+%   Outputs:
+%   - PtMedialThirdOfTT : A point on the original mesh that is between the
+%                         medial and center thirds of the tibial tuberosity
+%   - Legside : string that describe the leg side either 'L' or 'R'
+%   - PtsMedThird : A Nx3 matrix of the points use to get PtMedialThirdOfTT
+%   - PtsTT : A Nx3 matrix of the points located on the middle of the TTA
+%   - PtMiddleOfTT : Same as PtMedialThirdOfTT but located on the middle
+%                    of the TTA
+%
+%--------------------------------------------------------------------------
 if nargin < 3
     plots = 0;
 end
@@ -13,11 +32,17 @@ end
 clearvars PtsMedThird
 j=0;
 
-PtsMedThird = zeros(7,3);
-PtsTT = zeros(7,3);
+% Variable to handle the distance between the end of the diaphysis to the
+% start of the epiphysis. Area where the Tibial Tuberosity is thought to be
+% located
+AltitudesFract = 0 : 0.1 : 0.5;
 
-% Calculate the position of the
-for xAlt = 0.2 : 0.1 : 0.8
+PtsMedThird = zeros(length(AltitudesFract),3);
+PtsMid = zeros(length(AltitudesFract),3);
+PtsTT = zeros(length(AltitudesFract),3);
+
+% Calculate the position of the tibial tuberosity
+for xAlt = AltitudesFract
     j=j+1;
     
     % Find the border of the Proximal Tibia at the altitude xAlt along the
@@ -36,7 +61,6 @@ for xAlt = 0.2 : 0.1 : 0.8
     Li = sqrt(sum(diff(CSPtsRtC0,1,1).^2,2));
     
     Weights = Lim1 + Li;
-    
     
     Weights(end+1) = Weights(1);
     
@@ -58,11 +82,12 @@ for xAlt = 0.2 : 0.1 : 0.8
     opts.Lower = [-Inf -Inf 0];
     opts.StartPoint = [20 0 10];
     
+    
     % Fit model to data.
     [fitresultNeg, ~] = fit( xDataNeg, yDataNeg, ft, opts );
     [fitresultPos, ~] = fit( xDataPos, yDataPos, ft, opts );
     
-    % Test the most the least flat side
+    % Test the most the least flat side(higher sigma value of gaussian fit)
     if fitresultPos.c1 < fitresultNeg.c1
         IDX0 = knnsearch(CSPtsRtC0,[fitresultPos.a1 fitresultPos.b1 0]);
         LegSide = 'R' ;
@@ -84,13 +109,10 @@ for xAlt = 0.2 : 0.1 : 0.8
     while abs(IDX-IDX0)>1
         IDX0 = IDX;
         
-%         [~,IA,~] = intersect(CSPtsRtC0(1:end-1,:),PtsOnTT0,'rows','stable');
+%       [~,IA,~] = intersect(CSPtsRtC0(1:end-1,:),PtsOnTT0,'rows','stable');
         [~,IA,~] = intersect(CSPtsRtC0,PtsOnTT0,'rows','stable');
-%         IA = unique(IA,'rows','stable');
-        WeightPtsTT = Weights(IA,:);      
-        
-        length(IA)
-        length(PtsOnTT0)
+%       IA = unique(IA,'rows','stable');
+        WeightPtsTT = Weights(IA,:);
         
         WeightPtsTT = WeightPtsTT/sum(WeightPtsTT);
         PtMeanTT = sum([WeightPtsTT WeightPtsTT WeightPtsTT].*PtsOnTT0,1);
@@ -105,7 +127,7 @@ for xAlt = 0.2 : 0.1 : 0.8
         PtsOnTT0 = PtsOnTT;
     end
     
-    % Finalise the points that are on the TT
+    % Finalize the points that are on the TT
     PtsOnTT = PtsOnTTEnd;
     [~,IA,~] = intersect(CSPtsRtC0,PtsOnTT,'rows','stable');
     WeightPtsTT = Weights(IA,:);
@@ -123,14 +145,18 @@ for xAlt = 0.2 : 0.1 : 0.8
     [~,ILateralPt] = min(PtsOnTT*VTT);
     
     MedialThirdOfTT = 1/3*PtsOnTT(ILateralPt,:) + 2/3*PtsOnTT(IMedialPt,:);
+    MiddleOfTT = 1/2*PtsOnTT(ILateralPt,:) + 1/2*PtsOnTT(IMedialPt,:);
     
     LineEndingOfTT = PtsOnTT(IMedialPt,:)-PtsOnTT(ILateralPt,:);
     VLineEndingOfTT = LineEndingOfTT'/norm(LineEndingOfTT);
     
+    % The medial third point
     [~,IDMedThird] = min(abs(bsxfun(@minus,PtsOnTT,MedialThirdOfTT)*VLineEndingOfTT));
-    
     PtMedialThirdOfTT = PtsOnTT(IDMedThird,:);
     
+    % The middle of TT
+    [~,IDMiddle] = min(abs(bsxfun(@minus,PtsOnTT,MiddleOfTT)*VLineEndingOfTT));
+    PtMiddleofTT = PtsOnTT(IDMiddle,:);
     
     if plots ==1
         % Plot fits with data.
@@ -158,6 +184,7 @@ for xAlt = 0.2 : 0.1 : 0.8
     end
     
     PtsMedThird(j,:) = transpose(CS.V*(PtMedialThirdOfTT + Centroid)') ;
+    PtsMid(j,:) = transpose(CS.V*(PtMiddleofTT + Centroid)') ;
     PtsTT(j,:) = transpose(CS.V*(PtTT + Centroid)') ;
     
 end
@@ -165,9 +192,13 @@ end
 IDPtMedialThird = knnsearch(ProxTib.Points,mean(PtsMedThird));
 PtMedialThirdOfTT = ProxTib.Points(IDPtMedialThird,:);
 
+IDPtMiddle = knnsearch(ProxTib.Points,mean(PtsMid));
+PtMiddleOfTT = ProxTib.Points(IDPtMiddle,:);
+
 if plots ==1
     figure()
-    trisurf(ProxTib,'Facecolor',[0.65    0.65    0.6290],'FaceAlpha',1,'edgecolor','none'); % 0.8,0.8,0.85
+    trisurf(ProxTib,'Facecolor',[0.65    0.65    0.6290],...
+            'FaceAlpha',1,'edgecolor','none'); % 0.8,0.8,0.85
     hold on
     axis equal
     light('Position',CS.Origin' + 300*CS.Y + 200*CS.X,'Style','local')

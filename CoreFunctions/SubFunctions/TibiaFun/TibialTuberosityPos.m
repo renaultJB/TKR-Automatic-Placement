@@ -29,13 +29,36 @@ if nargin < 3
     plots = 0;
 end
 
-clearvars PtsMedThird
+clearvars PtsMedThird circularity Alt
 j=0;
 
 % Variable to handle the distance between the end of the diaphysis to the
 % start of the epiphysis. Area where the Tibial Tuberosity is thought to be
 % located
-AltitudesFract = 0 : 0.1 : 0.5;
+AltitudesFract = -0.5 : 0.05 : 0.75;
+
+
+for xAlt = AltitudesFract
+    j=j+1;
+    Curve = TriPlanIntersect(ProxTib,CS.Z,(xAlt*CS.AltStartEpiph+(1-xAlt)*CS.AltEndDiaph));
+    CSPts0 = Curve.Pts;
+    CSPts0 = interparc(201,CSPts0(:,1),CSPts0(:,2),CSPts0(:,3),'linear');
+    CSPtsRt = transpose(CS.V'*CSPts0');
+    
+    Perimeter = sum(sqrt(sum(diff(CSPtsRt,1).^2,2)));
+    Area = polyarea(CSPtsRt(:,1),CSPtsRt(:,2));
+    
+    circularity(j) = 2 * sqrt(pi) * sqrt(Area)/Perimeter;
+    Alt(j) = (xAlt*CS.AltStartEpiph+(1-xAlt)*CS.AltEndDiaph);
+    
+end
+
+[~,I_Cir_Min] = min(circularity);
+xAlt0 = AltitudesFract(I_Cir_Min);
+
+AltitudesFract = xAlt0;
+j=0;
+
 
 PtsMedThird = zeros(length(AltitudesFract),3);
 PtsMid = zeros(length(AltitudesFract),3);
@@ -49,11 +72,23 @@ for xAlt = AltitudesFract
     % Tibia Z axis
     Curve = TriPlanIntersect(ProxTib,CS.Z,(xAlt*CS.AltStartEpiph+(1-xAlt)*CS.AltEndDiaph));
     CSPts0 = Curve.Pts;
+    CSPts0 = interparc(201,CSPts0(:,1),CSPts0(:,2),CSPts0(:,3),'linear');
     CSPtsRt = transpose(CS.V'*CSPts0');
     [ Centroid, ~ ] = PlanPolygonCentroid3D( CSPtsRt );
-    
     CSPtsRtC0 = bsxfun(@minus,CSPtsRt,Centroid);
     
+    % Check that the normals are pointing outside, otherwise invert
+    % ordering of vertex
+    N = LineNormals2D(CSPtsRtC0(:,1:2));
+    OffSetCS = [CSPtsRtC0(:,1)+5*N(:,2),CSPtsRtC0(:,2)+5*N(:,2)];
+    InSetCS = [CSPtsRtC0(:,1)-5*N(:,2),CSPtsRtC0(:,2)-5*N(:,2)];
+    
+    if polyarea(OffSetCS(:,1),OffSetCS(:,2)) < polyarea(InSetCS(:,1),InSetCS(:,2))
+        CSPtsRtC0 = CSPtsRtC0(end:-1:1,:);
+        CSPtsRt = CSPtsRt(end:-1:1,:);
+        N = LineNormals2D(CSPtsRtC0(:,1:2));
+    end
+        
     %Calculate the weight of each vertex of the curves,
     % the weight is the sum of the length two connected edges
     
@@ -88,6 +123,7 @@ for xAlt = AltitudesFract
     [fitresultPos, ~] = fit( xDataPos, yDataPos, ft, opts );
     
     % Test the most the least flat side(higher sigma value of gaussian fit)
+    % and find the closest point on curve to the gaussian fit peak
     if fitresultPos.c1 < fitresultNeg.c1
         IDX0 = knnsearch(CSPtsRtC0,[fitresultPos.a1 fitresultPos.b1 0]);
         LegSide = 'R' ;
@@ -100,99 +136,109 @@ for xAlt = AltitudesFract
     PtTT00 = PtTT0;
     UTT0 =  PtTT0'/norm(PtTT0);
     
+    % Renumber curve from the opposite point to the TTA
+    [~,Imin] = min(CSPtsRtC0*UTT0);
+    CSPtsRtC0 = [CSPtsRtC0(Imin:end-1,:);CSPtsRtC0(1:Imin,:)];
+    N = LineNormals2D(CSPtsRtC0(:,1:2));
     
-    PtsOnTT0 = unique(CSPtsRtC0(CSPtsRtC0*UTT0>0.925*norm(PtTT0),:),'rows');
     
-    PtsOnTTEnd = PtsOnTT0;
-    IDX=10^6;
+    % Get the curvature and keep only the curvature peaks that are on the 
+    % anterior face and that make a angle superior to 30° with UTT0
     
-    while abs(IDX-IDX0)>1
-        IDX0 = IDX;
-        
-%       [~,IA,~] = intersect(CSPtsRtC0(1:end-1,:),PtsOnTT0,'rows','stable');
-        [~,IA,~] = intersect(CSPtsRtC0,PtsOnTT0,'rows','stable');
-%       IA = unique(IA,'rows','stable');
-        WeightPtsTT = Weights(IA,:);
-        
-        WeightPtsTT = WeightPtsTT/sum(WeightPtsTT);
-        PtMeanTT = sum([WeightPtsTT WeightPtsTT WeightPtsTT].*PtsOnTT0,1);
-        
-        IDX = knnsearch(CSPtsRtC0,PtMeanTT);
-        PtTT = CSPtsRtC0(IDX,:);
-        UTT = PtTT'/norm(PtTT);
-        PtsOnTT = unique(CSPtsRtC0(CSPtsRtC0*UTT>0.90*norm(PtTT),:),'rows','stable');
-        
-        PtsOnTTEnd  = unique([PtsOnTTEnd;PtsOnTT],'rows','stable');
-        
-        PtsOnTT0 = PtsOnTT;
-    end
+    k = LineCurvature2D(CSPtsRtC0(:,1:2));
     
-    % Finalize the points that are on the TT
-    PtsOnTT = PtsOnTTEnd;
-    [~,IA,~] = intersect(CSPtsRtC0,PtsOnTT,'rows','stable');
-    WeightPtsTT = Weights(IA,:);
-    WeightPtsTT = WeightPtsTT/sum(WeightPtsTT);
-    PtMeanTT = sum([WeightPtsTT WeightPtsTT WeightPtsTT].*PtsOnTT,1);
+    [pks,locs] = findpeaks(-k);
     
-    IDX = knnsearch(CSPtsRtC0,PtMeanTT);
-    PtTT = CSPtsRtC0(IDX,:);
-    UTT = PtTT'/norm(PtTT);
+    I1 = find( CSPtsRtC0(locs,:)*UTT0>0.25*max(CSPtsRtC0*UTT0) &... %0.1*max(CSPtsRtC0*UTT0)
+               N(locs,:)*UTT0(1:2,:)<sqrt(3)/2 &...
+               abs(N(locs,:)*[0;sign(UTT0(1))])>0.5 &...
+               pks>quantile(pks,2/3)...
+               );
+%     %
+%                         N(locs,:)*UTT0(1:2,:)<sqrt(3)/2 &...
+%               abs(N(locs,:)*[0;sign(UTT0(1))])>0.5 &... %*[0;sign(UTT0(1))])>0.5
+%           
+    locs_ok = locs(I1);
     
-    % Identify the medial third of the Tibial Tuberosity :
-    % Make it lateral to medial like for the Tibia CS
-    VTT = [UTT(2) -UTT(1) 0]'; VTT = sign(VTT(2))*VTT;
-    [~,IMedialPt] = max(PtsOnTT*VTT);
-    [~,ILateralPt] = min(PtsOnTT*VTT);
     
-    MedialThirdOfTT = 1/3*PtsOnTT(ILateralPt,:) + 2/3*PtsOnTT(IMedialPt,:);
-    MiddleOfTT = 1/2*PtsOnTT(ILateralPt,:) + 1/2*PtsOnTT(IMedialPt,:);
+    [pks,locs] = findpeaks(k);
+    I2 = find( CSPtsRtC0(locs,:)*UTT0>0.33*max(CSPtsRtC0*UTT0) &...
+              abs(N(locs,:)*[sign(UTT0(1));0])>0 &...
+              pks>quantile(pks,2/3)...
+              );
+    locs_ok2 = locs(I2);
     
-    LineEndingOfTT = PtsOnTT(IMedialPt,:)-PtsOnTT(ILateralPt,:);
+    % Get rid of peaks located outside the TT
+    locs_ok2(locs_ok2<locs_ok(1))=[];
+    locs_ok2(locs_ok2>locs_ok(end))=[]; 
+    
+    % Find the Start Antero-Lateral and End Antero-Medial of the TT
+    I = find(locs_ok<locs_ok2(1));
+    Loc_TT_AL = round((locs_ok(I(end))+locs_ok2(1))/2);
+    Loc_TT_AM = min(locs_ok2(end),min(locs_ok(locs_ok>median(locs_ok2))));
+
+    % Find the middle and third of the line separating the TT from the rest
+    % of the bone cross section curve
+    MedialThirdOfTT = 1/3*CSPtsRtC0(Loc_TT_AL,:) + 2/3*CSPtsRtC0(Loc_TT_AM,:);
+    MiddleOfTT = 1/2*CSPtsRtC0(Loc_TT_AL,:) + 1/2*CSPtsRtC0(Loc_TT_AM,:);
+    
+    % update the Tibial tuberosity direction from 
+    UTT0 = MiddleOfTT'/norm(MiddleOfTT);
+    
+    % Get the separating line direction
+    LineEndingOfTT = CSPtsRtC0(Loc_TT_AM,:)-CSPtsRtC0(Loc_TT_AL,:);
     VLineEndingOfTT = LineEndingOfTT'/norm(LineEndingOfTT);
     
-    % The medial third point
-    [~,IDMedThird] = min(abs(bsxfun(@minus,PtsOnTT,MedialThirdOfTT)*VLineEndingOfTT));
-    PtMedialThirdOfTT = PtsOnTT(IDMedThird,:);
     
-    % The middle of TT
-    [~,IDMiddle] = min(abs(bsxfun(@minus,PtsOnTT,MiddleOfTT)*VLineEndingOfTT));
-    PtMiddleofTT = PtsOnTT(IDMiddle,:);
+    % Keep points on the anterior quarter of the cross section curves
+    CSPtsRtC0_p = CSPtsRtC0(CSPtsRtC0*UTT0>0.5*max(CSPtsRtC0*UTT0),:);
     
+    % The medial third point on curve
+    [~,IDMedThird] = min(abs(bsxfun(@minus,CSPtsRtC0_p,MedialThirdOfTT)*VLineEndingOfTT));
+    PtMedialThirdOfTT = CSPtsRtC0_p(IDMedThird,:);
+    
+    % The middle of TT on curve
+    [~,IDMiddle] = min(abs(bsxfun(@minus,CSPtsRtC0_p,MiddleOfTT)*VLineEndingOfTT));
+    PtMiddleofTT = CSPtsRtC0_p(IDMiddle,:);
+        
     if plots ==1
-        % Plot fits with data.
-        %     figure( 'Name', 'FitParts' );
-        %     h = plot( fitresultNeg, xDataNeg, yDataNeg );
-        %     hold on
-        %     h = plot( fitresultPos, xDataPos, yDataPos , 'm.' );
-        %     xlabel X
-        %     ylabel Y
-        %     grid on
-        %     axis equal
-        
-        
-        figure()
-        pl3t(CSPtsRtC0,'k-')
+        plotCurvature2D(CSPtsRtC0,k)
         hold on
-        pl3t(PtTT00,'g*')
-        pl3t(PtTT,'rs')
-        pl3t(PtMedialThirdOfTT,'ko')
-        pl3t(PtsOnTT,'b.')
-        pl3t(MedialThirdOfTT,'ro')
-        
-        pl3t([0 0 0],'ko')
-        
+        pl3t(CSPtsRtC0(1,:),'ko')
+        pl3t(PtTT0,'ko')
+        pl3t(CSPtsRtC0(locs_ok2,:)','ro')
+        pl3t(CSPtsRtC0(locs_ok,:)','ks')
+        pl3t(mean(CSPtsRtC0(locs_ok2(1):locs_ok2(end),:)),'m+')
+        pl3t(CSPtsRtC0(Loc_TT_AL,:),'mo')
+        pl3t([CSPtsRtC0(Loc_TT_AL,:);CSPtsRtC0(Loc_TT_AL,:);...
+            CSPtsRtC0(Loc_TT_AM,:);CSPtsRtC0(Loc_TT_AM,:)],'k-')
+        pl3t(PtMiddleofTT,'k*')
+        pl3t(PtMedialThirdOfTT,'r*')
+        pl3t(zeros(3,5),'ko')
     end
     
     PtsMedThird(j,:) = transpose(CS.V*(PtMedialThirdOfTT + Centroid)') ;
     PtsMid(j,:) = transpose(CS.V*(PtMiddleofTT + Centroid)') ;
-    PtsTT(j,:) = transpose(CS.V*(PtTT + Centroid)') ;
+%     PtsTT(j,:) = transpose(CS.V*(PtTT + Centroid)') ;
     
+Perimeter = sum(sqrt(sum(diff(CSPtsRtC0,1).^2,2)));
+Area = polyarea(CSPtsRtC0(:,1),CSPtsRtC0(:,2));
+
+circularity(j) = 2 * sqrt(pi) * sqrt(Area)/Perimeter;
+Alt(j) = (xAlt*CS.AltStartEpiph+(1-xAlt)*CS.AltEndDiaph);
 end
 
-IDPtMedialThird = knnsearch(ProxTib.Points,mean(PtsMedThird));
+% IDPtMedialThird = knnsearch(ProxTib.Points,mean(PtsMedThird));
+% PtMedialThirdOfTT = ProxTib.Points(IDPtMedialThird,:);
+% 
+% IDPtMiddle = knnsearch(ProxTib.Points,mean(PtsMid));
+% PtMiddleOfTT = ProxTib.Points(IDPtMiddle,:);
+
+
+IDPtMedialThird = knnsearch(ProxTib.Points,PtsMedThird);
 PtMedialThirdOfTT = ProxTib.Points(IDPtMedialThird,:);
 
-IDPtMiddle = knnsearch(ProxTib.Points,mean(PtsMid));
+IDPtMiddle = knnsearch(ProxTib.Points,PtsMid);
 PtMiddleOfTT = ProxTib.Points(IDPtMiddle,:);
 
 if plots ==1
@@ -201,15 +247,19 @@ if plots ==1
             'FaceAlpha',1,'edgecolor','none'); % 0.8,0.8,0.85
     hold on
     axis equal
-    light('Position',CS.Origin' + 300*CS.Y + 200*CS.X,'Style','local')
-    light('Position',CS.Origin' + 200*CS.Y - 200*CS.X,'Style','local')
-    light('Position',CS.Origin' + 50*CS.Y + 50*CS.X - 500*CS.Z,'Style','local')
+    light('Position',CS.Origin' + 500*CS.Y + 500*CS.X - 200*CS.X,'Style','local')
+    light('Position',CS.Origin' + 500*CS.Y - 500*CS.X,'Style','local')
+    light('Position',CS.Origin' - 500*CS.Y + 500*CS.X + 500*CS.Z,'Style','local')
     plotDot( PtsMedThird, 'r', 1.25 )
     plotDot( PtMedialThirdOfTT, 'g', 2.5 )
-    plotDot( PtsTT, 'b', 1.25 )
+    plotDot( PtsMid, 'b', 1.25 )
+%     plotDot( PtsTT, 'b', 1.25 )
     hold on
     grid off
     lighting gouraud
+    
+    figure()
+    plot(Alt,circularity,'.-')
 end
 
 end

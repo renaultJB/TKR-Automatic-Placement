@@ -113,6 +113,15 @@ for xAlt = AltitudesFract
     PtTT0 = CSPtsRtC0(IDX0,:);
     UTT0 =  PtTT0'/norm(PtTT0);
     
+    %% Little trick so that the code works on both leg side
+    if LegSide == 'L'
+        CSPtsRtC0(:,1) = -CSPtsRtC0(:,1);
+        CSPtsRtC0 = CSPtsRtC0(end:-1:1,:);
+        UTT0(1) = -UTT0(1);
+        PtTT0(1) = -PtTT0(1);
+    end
+        
+    
     % Renumber curve from the opposite point to the TTA
     [~,Imin] = min(CSPtsRtC0*UTT0);
     CSPtsRtC0 = [CSPtsRtC0(Imin:end-1,:);CSPtsRtC0(1:Imin,:)];
@@ -204,8 +213,16 @@ for xAlt = AltitudesFract
         pl3t(PtMedialThirdOfTT,'rs')
     end
     
+    if LegSide == 'L'
+        PtMedialThirdOfTT(:,1) = -PtMedialThirdOfTT(:,1);
+        PtMiddleofTT(1) = -PtMiddleofTT(1);
+    end
+    
     PtsMedThird = transpose(CS.V*(PtMedialThirdOfTT + Centroid)') ;
     PtsMid = transpose(CS.V*(PtMiddleofTT + Centroid)') ;
+    
+
+    
 
 end
 IDPtMedialThird = knnsearch(ProxTib.Points,PtsMedThird);

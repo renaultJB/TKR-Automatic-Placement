@@ -13,6 +13,19 @@ switch Prosth_Type
         Type = {'S4','S5','S6','S7'};
         Widths = [67 42.8; 67 46.4;67 46.8;76 50.5;76 55.5];
         Thickness = 2.5;
+        
+    case 3
+        Type = {'C','D','E','F','G'};
+        Size = [44.9	39.5	63.8;
+                47.2	41.8	67;
+                50.2	44.6	71;
+                53.3	47.4	75.1;
+                56.5	50.2	79];
+        Widths = [Size(:,3), 0.8*Size(:,2) + 0.2*Size(:,1)] ;
+        Thickness = 3.8;
+        
+
+
 end
 % Choose inferior size if it's too large MedioLaterally
 k = dsearchn(Widths,[PC_ML_Width PC_AP_Width]);

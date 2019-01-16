@@ -1,21 +1,23 @@
-function  PlotTibiaDeformation(ProxTib, DistTib, ProsthesisEnd,  CS )
+function  PlotTibiaDeformation(TrObjects, ProsthesisEnd, PtMedialThirdOfTT, CS )
 %PLOTTIBIADEFORMATION Summary of this function goes here
 %   Detailed explanation goes here
 
 
 %% Transform the triangulation into the tibia CS
-ProxTib = triangulation(ProxTib.ConnectivityList,transpose(CS.V'*bsxfun(@minus,ProxTib.Points,CS.Origin)'));
-DistTib = triangulation(DistTib.ConnectivityList,transpose(CS.V'*bsxfun(@minus,DistTib.Points,CS.Origin)'));
+ProxTib = triangulation(TrObjects.ProxTib.ConnectivityList,transpose(CS.V'*bsxfun(@minus,TrObjects.ProxTib.Points,CS.Origin)'));
+DistTib = triangulation(TrObjects.DistTib.ConnectivityList,transpose(CS.V'*bsxfun(@minus,TrObjects.DistTib.Points,CS.Origin)'));
 Prosthesis = triangulation(ProsthesisEnd.ConnectivityList,transpose(CS.V'*bsxfun(@minus,ProsthesisEnd.Points,CS.Origin)'));
-EpiTibArtMed = triangulation(CS.Morph.EpiTibArtMed.ConnectivityList,...
-    transpose(CS.V'*bsxfun(@minus,CS.Morph.EpiTibArtMed.Points,CS.Origin)'));
+EpiTibArtMed = triangulation(TrObjects.EpiTibASMed.ConnectivityList,...
+    transpose(CS.V'*bsxfun(@minus,TrObjects.EpiTibASMed.Points,CS.Origin)'));
 %% Transform the 
 
-Ntp = CS.V'*CS.TpCS.Z; %
+Ntp = CS.V'*CS.Ztp; %
 
-[NtpMed,d] = LS_Plan( EpiTibArtMed.Points );
+[x0,NtpMed] = lsplane( EpiTibArtMed.Points );
+d = x0*NtpMed;
 
 
+PtMedialThirdOfTT = transpose(CS.V'*bsxfun(@minus,PtMedialThirdOfTT,CS.Origin)');
 
 % Varus angle
 
@@ -45,7 +47,7 @@ FrontEdgePts=ones(length(Alt),3);
 i=0;
 for alt=Alt
     i=i+1;
-    Curve = TriPlanIntersect(ProxTib, [0;0;1], alt);
+    Curve = TriPlanIntersect(ProxTib, [0;0;1], -alt);
     [~,Imax] = min(Curve(1).Pts(:,1));
 %     Imax
 %     Curve(1).Pts(Imax,:)
@@ -195,6 +197,7 @@ light('Position',[50 50 200],'Style','local')
 light('Position',[-50 -50 -200],'Style','local')
 light('Position',[-50 100 -200],'Style','local')
 plotCylinder( [0; 0; -1], 0.75, [0, 0, 0.5*min(ProxTib.Points(:,3)) + 0.5*max(ProxTib.Points(:,3))], abs(min(ProxTib.Points(:,3))) + 20, 1, 'k')
+plotDot(PtMedialThirdOfTT,'r',2)
 view(90,0)
 
 subplot(1,4,4)
@@ -208,6 +211,7 @@ light('Position',[50 50 200],'Style','local')
 light('Position',[-50 -50 -200],'Style','local')
 light('Position',[-50 100 -200],'Style','local')
 plotCylinder( [0; 0; -1], 0.75, [0, 0, 0.5*min(ProxTib.Points(:,3)) + 0.5*max(ProxTib.Points(:,3))], abs(min(ProxTib.Points(:,3))) + 20, 1, 'k')
+plotDot(PtMedialThirdOfTT,'r',2)
 view(0,0)
 
 

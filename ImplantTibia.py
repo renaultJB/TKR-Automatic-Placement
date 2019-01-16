@@ -23,7 +23,7 @@ if PosFiles!=1 :
     PosFiles=0
 
 if MeshExist!=1 :
-    ElmtSize2D = 0.5
+    ElmtSize2D = 0.51
 TypeProth = input("Prosthesis Type ? (1 for Old, 2 for recent): ")
 
 print("\n###########################################\n######### END OF USER INPUT ###############\n###########################################\n")

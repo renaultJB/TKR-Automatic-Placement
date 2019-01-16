@@ -15,18 +15,14 @@ Ring = TriReduceMesh(Prosth,IdElmtsOk);
 %% 2nd identify a layer of the proxTibia at the same altitude
 RingPts = Ring.Points;
 
-[n,d] = LS_Plan(RingPts);
+[x0,n] = lsplane(RingPts);
 
-IdElmtsOk =  find(abs(ProxTib.incenter*n+(d+1)) <3);
+d=x0*n;
+IdElmtsOk =  find(abs(ProxTib.incenter*n) + (d+1) < 3  );
 
 ProxTibLayer = TriReduceMesh(ProxTib,IdElmtsOk);
 
 ProxTibLayerPts = ProxTibLayer.Points;
-
-
-
-
-
 
 %% Compute the paired points closest distance
 

@@ -29,10 +29,10 @@ tic
 % addpath(strcat(pwd,'\SubFunctions'))
 % addpath(strcat(pwd,'\GraphicSubFunctions'))
 
-
 %% Parameters
 % Prescribed Posterior slope of the implant relative to mechanical axis
 beta0 = 5;
+Zoffset_tp = 7; % offset of the tibial plateau plan to calculate dimension
 
 %% Files and folders handling
 addpath(genpath(strcat(pwd,'\SubFunctions')))
@@ -40,8 +40,6 @@ addpath(genpath(strcat(pwd,'\GraphicSubFunctions')))
 
 % Get file names and parse the mesh files to matlab
 RootDir = fileparts(pwd);
-
-
 
 %% Try to find the ".mat" file containing the mesh and associated Coordinate system
 
@@ -56,16 +54,17 @@ else
     DistTibMeshFile = strcat(RootDir,'\DistTibia_',SubjectCode,'.msh');
     
     %% Read mesh files of the proximal an distal tibia
-    [ ProxTib, DistTib ] = ReadCheckMesh( ProxTibMeshFile, DistTibMeshFile );
+    [ProxTib,DistTib] = ReadMesh( ProxTibMeshFile, DistTibMeshFile );
     
     %% Construct the coordinates system of the tibia
-    [ CS ] = TibiaCS( ProxTib , DistTib);
+    [ CSs, TrObjects ] = RTibiaFun( ProxTib , DistTib);
+    CS = CSs.PIAASL;
 
     %% Find the tibial tuberosity of the Tibia, this also permits the identification of the legside  
-    [ PtMedialThirdOfTT, LegSideName, ~, ~ ] = TibialTuberosityPos(ProxTib, CS , 0);
+    [ PtMedialThirdOfTT, LegSideName, ~, ~ ] = TibialTuberosityPos(ProxTib, CS , 1);
     
     %% Save Mesh and associated CS
-    save(TmpFileName,'ProxTib','DistTib','CS','PtMedialThirdOfTT','LegSideName') 
+    save(TmpFileName,'ProxTib','DistTib','CS','TrObjects','PtMedialThirdOfTT','LegSideName') 
 end
 
 if LegSideName == 'R'
@@ -78,19 +77,20 @@ LegSide = double(2*Right_Knee - 1);
 
 
 %% Perform measurements
+% CS.d_tp = -CS.Origin*CS.Ztp;
 
 % Tibial plateau size
-Curve = TriPlanIntersect(ProxTib, CS.TpCS.Z, -(CS.TpCS.d+10));
+Curve = TriPlanIntersect(ProxTib, CS.Ztp, -(CS.Origin*CS.Ztp - Zoffset_tp));
 ML_Width = range(Curve.Pts*CS.Y);
 AP_Width = range(Curve.Pts*CS.X);
 
 % Varus angle
-Ztp__ProjmechYZ = CS.TpCS.Z - dot(CS.TpCS.Z,CS.X)*CS.X;
+Ztp__ProjmechYZ = CS.Ztp - dot(CS.Ztp,CS.X)*CS.X;
 Ztp__ProjmechYZ = Ztp__ProjmechYZ/norm(Ztp__ProjmechYZ);
 Angle_Varus = rad2deg(asin(Ztp__ProjmechYZ'*CS.Y));
 
 % Tibial Slope
-Ztp__ProjmechXZ = CS.TpCS.Z - dot(CS.TpCS.Z,CS.Y)*CS.Y;
+Ztp__ProjmechXZ = CS.Ztp - dot(CS.Ztp,CS.Y)*CS.Y;
 Ztp__ProjmechXZ = Ztp__ProjmechXZ/norm(Ztp__ProjmechXZ);
 Angle_Slope = LegSide*rad2deg(asin(Ztp__ProjmechXZ'*CS.X));
 
@@ -114,7 +114,7 @@ R_xp = [U_xp V_xp Nxp];
 
 %% Obtention of Normal of the cutting plane (Nrml_xp)
 
-Curve_xp = TriPlanIntersect(ProxTib,Nxp,-d_xp);
+Curve_xp = TriPlanIntersect(ProxTib,Nxp,d_xp);
 Boundary_xp = Curve_xp(1).Pts;
 
 % Tibia dimension at prosthesis cut plan
@@ -132,8 +132,8 @@ AP_Width_xp = range(Boundary_xp*U_xp);
 StemTip = StemTip*[0 LegSide 0 ; 1 0 0; 0 0 -1]'; % [0 LegSide 0 ; LegSide 0 0; 0 0 -1] %[0 1 0 ; LegSide 0 0; 0 0 -1]
 Prosthesis = triangulation(Prosthesis0.ConnectivityList,transpose([0 LegSide 0 ; 1 0 0; 0 0 -1]*Prosthesis0.Points'));
 
-Elmts2D = fixNormals( Prosthesis.Points, Prosthesis.ConnectivityList );
-Prosthesis = triangulation(Elmts2D,Prosthesis.Points);
+% Elmts2D = fixNormals( Prosthesis.Points, Prosthesis.ConnectivityList );
+% Prosthesis = triangulation(Elmts2D,Prosthesis.Points);
 
 Start_Point = Centroid_xp-U_xp'*0.36*LegSide*AP_Width_xp+0.02*V_xp'*ML_Width_xp...
     +(Thickness+1.5)*Nxp'; %Prosthesis thickness +1.5 cement thickness
@@ -154,7 +154,7 @@ Boundary_xp_inRxp = transpose(R_xp'*bsxfun(@minus,Boundary_xp,Oxp)');
 Boundary_xp_inRxp = Boundary_xp_inRxp(1:7:end-1,:); 
 CDiaphysisStemTip = transpose(R_xp'*(CDiaphysisStemTip_CT-Oxp)');
 
-CurvesProsthesisTP = TriPlanIntersect(Prosthesis,[10^-6; 10^-6; 1],-2); %10^-6 to avoid numerical error
+CurvesProsthesisTP = TriPlanIntersect(Prosthesis,[10^-6; 10^-6; 1],2); %10^-6 to avoid numerical error
 Boundary_ProsthesisTP = [CurvesProsthesisTP.Pts(1:5:end-1,:) ; CurvesProsthesisTP.Pts(end,:)];
 
 
@@ -212,13 +212,17 @@ PtsProsthEnd(:,4)=[];
 
 ProsthesisEnd = triangulation(Prosthesis0.ConnectivityList,PtsProsthEnd);
 
+
+
 % PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, Nxp, R_xp, LegSide, d_xp, CS, PtMedialThirdOfTT, Boundary_xp )
 
 
 [ CtrltyScore, Tabl ] = CentralityScore(ProxTib, Prosthesis, ProsthesisEnd, StemTip, LegSide);
 writetable(Tabl,['Centrality_' SubjectCode '_alpha' num2str(alpha) '.txt'])
 
-PlotTibiaDeformation(ProxTib, DistTib, ProsthesisEnd,  CS )
+
+
+PlotTibiaDeformation(TrObjects, ProsthesisEnd, PtMedialThirdOfTT, CS )
 
 fID3=fopen(['Output_' SubjectCode '_alpha' num2str(alpha) '.txt'],'w');
 fprintf(fID3,'name= "%s" \r\n', SubjectCode );

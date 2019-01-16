@@ -40,26 +40,30 @@ end
 % XYZ = py.txt2mtlb.read_nodesGMSH(ImplantFile);
 % Pts_prosthesis_init = [cell2mat(cell(XYZ{'X'}))' cell2mat(cell(XYZ{'Y'}))' cell2mat(cell(XYZ{'Z'}))'];
 
-XYZELMTS = py.txt2mtlb.find_ProsthFile_read_meshGMSH(pyargs('directory',CWD,'Pname',size,'Ptype',Prosth_Type));
-Pts_prosthesis_init = [cell2mat(cell(XYZELMTS{'X'}))' cell2mat(cell(XYZELMTS{'Y'}))' cell2mat(cell(XYZELMTS{'Z'}))'];
-Elmts2D = double([cell2mat(cell(XYZELMTS{'N1'}))' cell2mat(cell(XYZELMTS{'N2'}))' cell2mat(cell(XYZELMTS{'N3'}))']);
+ProsthFileName = py.txt2mtlb.find_ProsthFile(pyargs('directory',CWD,'Pname',size,'Ptype',Prosth_Type));
+ProsthFileName = char(ProsthFileName);
+% Pts_prosthesis_init = [cell2mat(cell(XYZELMTS{'X'}))' cell2mat(cell(XYZELMTS{'Y'}))' cell2mat(cell(XYZELMTS{'Z'}))'];
+% Elmts2D = double([cell2mat(cell(XYZELMTS{'N1'}))' cell2mat(cell(XYZELMTS{'N2'}))' cell2mat(cell(XYZELMTS{'N3'}))']);
+% Elmts2D = fixNormals(Pts_prosthesis_init, Elmts2D );
+% Prosthesis = triangulation(Elmts2D, Pts_prosthesis_init);
 
-Elmts2D = fixNormals(Pts_prosthesis_init, Elmts2D );
-Prosthesis = triangulation(Elmts2D, Pts_prosthesis_init);
+[Prosthesis] = ReadMesh(ProsthFileName);
+
+
 
 % Thickness of the slice in distal points for stem tip center calculation 
 ht = 5;
 
 switch Prosth_Type
     case 1
-        [~,Izmax] = max(Pts_prosthesis_init(:,3));
-        Zmax = Pts_prosthesis_init(Izmax,3);
-        StemCenter = mean(Pts_prosthesis_init(Pts_prosthesis_init(:,3)>Zmax-ht,:))+...
+        [~,Izmax] = max(Prosthesis.Points(:,3));
+        Zmax = Prosthesis.Points(Izmax,3);
+        StemCenter = mean(Prosthesis.Points(Prosthesis.Points(:,3)>Zmax-ht,:))+...
             [0 0 ht/2];
     case 2
-        [~,Izmin] = min(Pts_prosthesis_init(:,3));
-        Zmin = Pts_prosthesis_init(Izmin,3);
-        StemCenter = mean(Pts_prosthesis_init(Pts_prosthesis_init(:,3)<Zmin+ht,:))+...
+        [~,Izmin] = min(Prosthesis.Points(:,3));
+        Zmin = Prosthesis.Points(Izmin,3);
+        StemCenter = mean(Prosthesis.Points(Prosthesis.Points(:,3)<Zmin+ht,:))+...
             [0 0 -ht/2];
 end
 

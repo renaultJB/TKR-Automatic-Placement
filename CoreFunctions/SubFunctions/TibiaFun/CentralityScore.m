@@ -17,13 +17,25 @@ RingPts = Ring.Points;
 
 [x0,n] = lsplane(RingPts);
 
+figure(90)
+trisurf(ProxTib,'FaceAlpha',0.5);
+hold on
+axis equal
+plotPlan(n,x0,RingPts)
+
 d=x0*n;
-IdElmtsOk =  find(abs(ProxTib.incenter*n) + (d+1) < 3  );
+IdElmtsOk =  find(ProxTib.incenter*n  <  + (d+1)  );
 
 ProxTibLayer = TriReduceMesh(ProxTib,IdElmtsOk);
 
 ProxTibLayerPts = ProxTibLayer.Points;
 
+figure(90)
+trisurf(ProxTib,'FaceAlpha',0.5);
+hold on
+axis equal
+trisurf(Ring);
+pl3t(ProxTibLayerPts,'r*')
 %% Compute the paired points closest distance
 
 

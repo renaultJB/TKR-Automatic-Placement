@@ -1,4 +1,4 @@
-function PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, Nxp, R_xp, LegSide, d_xp, CS, PtMedialThirdOfTT, Boundary_xp )
+function PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, Nxp, R_xp, LegSide, d_xp, CS, PtMedialThirdOfTT, Boundary_xp, TTproj )
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -78,7 +78,7 @@ for i = 1 : length(history)
     PtsProsth0 = Prosthesis0.Points;
     PtsProsth0(:,4) = ones(length(PtsProsth0),1);
     
-    T = zeros(4,4); T(1:3,1:3) = Rp*R_xp*[0 LegSide 0 ; LegSide 0 0; 0 0 -1]; %[0 LegSide 0 ; 1 0 0; 0 0 -1]
+    T = zeros(4,4); T(1:3,1:3) = Rp*R_xp*[0 -1 0 ; 1 0 0; 0 0 1]; %[0 LegSide 0 ; 1 0 0; 0 0 -1]
     T(:,4)=[ProthOrig';1];
     
     
@@ -101,7 +101,8 @@ for i = 1 : length(history)
     light('Position',[300 300 -100],'Style','local')
     %     plotDot( PtMedialThirdOfTT, 'r', 2 )
     trisurf(ProsthesisEnd,'Facecolor','g','FaceAlpha',1,'edgecolor','none');
-    plotDot( PtMedialThirdOfTT, 'r', 2 )
+    plotDot( PtMedialThirdOfTT, 'r', 1.5 )
+    plotDot( TTproj, 'g', 2 )
     hold on
     grid off
     axis off

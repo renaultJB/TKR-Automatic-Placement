@@ -1,4 +1,4 @@
-function [ Tstring , T_str_anat , ML_Width_xp , AP_Width_xp , ProstName] = PositionProth1( SubjectCode, alpha , LongStem )
+function [ Tstring , T_str_anat , ML_Width_xp , AP_Width_xp , ProstName] = PositionProth3( SubjectCode, alpha , LongStem )
 %PositionProth1 : This function place a prosthesis onto a tibia this works
 %in pair with a python sript
 %
@@ -34,6 +34,7 @@ tic
 beta0 = 5;
 Zoffset_tp = 7; % offset of the tibial plateau plan to calculate dimension
 ResectionOffset = 3.5 ;
+CmtThickness = 1.5;
 
 %% Files and folders handling
 addpath(genpath(strcat(pwd,'\SubFunctions')))
@@ -127,19 +128,21 @@ AP_Width_xp = range(Boundary_xp*U_xp);
 % here the origin on CAO is located on the superior surface on the middle of the posterior edge
 
 [ Prosthesis0, StemTip, Thickness , ProstName ] = ...
-    SelectImplantSize(RootDir, ML_Width_xp, AP_Width_xp, 1, LongStem );
+    SelectImplantSize(RootDir, ML_Width_xp, AP_Width_xp, 3, LongStem, LegSideName );
+
+
 
 % Adapt to the coordinate frame and leg side [Specific of the prosthesis geometry]                 
-StemTip = StemTip*[0 LegSide 0 ; 1 0 0; 0 0 -1]'; % [0 LegSide 0 ; LegSide 0 0; 0 0 -1] %[0 1 0 ; LegSide 0 0; 0 0 -1]
-Prosthesis = triangulation(Prosthesis0.ConnectivityList,transpose([0 LegSide 0 ; 1 0 0; 0 0 -1]*Prosthesis0.Points'));
+StemTip = StemTip*[0 -1 0 ; 1 0 0; 0 0 1]'; % [0 LegSide 0 ; LegSide 0 0; 0 0 -1] %[0 1 0 ; LegSide 0 0; 0 0 -1
+Prosthesis = triangulation(Prosthesis0.ConnectivityList,transpose([0 -1 0 ; 1 0 0; 0 0 1]*Prosthesis0.Points'));
 
 % Elmts2D = fixNormals( Prosthesis.Points, Prosthesis.ConnectivityList );
 % Prosthesis = triangulation(Elmts2D,Prosthesis.Points);
 
 Start_Point = Centroid_xp-U_xp'*0.36*LegSide*AP_Width_xp+0.02*V_xp'*ML_Width_xp...
-    +(Thickness+1.5)*Nxp'; %Prosthesis thickness +1.5 cement thickness
+    +(Thickness+CmtThickness)*Nxp'; %Prosthesis thickness +1.5 cement thickness
 
-Oxp = Start_Point -(Thickness+1.5)*Nxp';
+Oxp = Start_Point -(Thickness+CmtThickness)*Nxp';
 
 % Move Stem Tip in CT Cooridante frame
 StemTip_CT = R_xp*StemTip' + Start_Point';
@@ -155,7 +158,24 @@ Boundary_xp_inRxp = transpose(R_xp'*bsxfun(@minus,Boundary_xp,Oxp)');
 Boundary_xp_inRxp = Boundary_xp_inRxp(1:7:end-1,:); 
 CDiaphysisStemTip = transpose(R_xp'*(CDiaphysisStemTip_CT-Oxp)');
 
-CurvesProsthesisTP = TriPlanIntersect(Prosthesis,[10^-6; 10^-6; 1],2); %10^-6 to avoid numerical error
+CurvesProsthesisTP = TriPlanIntersect(Prosthesis,[10^-6; 10^-6; 1],0); %10^-6 to avoid numerical error
+
+AreaMax=0;
+for i = 1 : length(CurvesProsthesisTP)
+    A = polyarea(CurvesProsthesisTP(i).Pts(:,1),CurvesProsthesisTP(i).Pts(:,2));
+    if A > AreaMax
+        AreaMax = A;
+        iMax = i;
+    end
+end
+
+CurvesProsthesisTP = CurvesProsthesisTP(iMax);
+    
+
+figure()
+trisurf(Prosthesis)
+hold on
+pl3t(CurvesProsthesisTP.Pts,'r*-')
 Boundary_ProsthesisTP = [CurvesProsthesisTP.Pts(1:5:end-1,:) ; CurvesProsthesisTP.Pts(end,:)];
 
 
@@ -181,6 +201,13 @@ U_TT = TTproj' / norm(TTproj);
 
 x0(3) = rad2deg(asin(U_TT(2)));
 
+figure(10)
+pl3t(Boundary_xp_inRxp,'k-')
+hold on
+axis equal
+pl3t(Boundary_ProsthesisTP,'r-')
+plotDot(TTproj,'r',2)
+
 if abs(StemTip(3))>100
     f = @(x)CenteringStemTipGoal(x , Boundary_xp_inRxp , Boundary_ProsthesisTP , StemTip);  % C or CDiaphysisStemTip
     fcon = @(x)CoverageCost(x, Boundary_xp_inRxp, Boundary_ProsthesisTP , TTproj);
@@ -194,16 +221,16 @@ end
 
 
 
+
 ProthOrig = Start_Point + x(1)*U_xp' + x(2)*V_xp';
 Rp = rot(Nxp,x(3));
 
 %% Placement Matrix To FreeCAD
-
 PtsProsth0 = Prosthesis0.Points;
 PtsProsth0(:,4) = ones(length(PtsProsth0),1);
 
 
-T = zeros(4,4); T(1:3,1:3) = Rp*R_xp*[0 LegSide 0 ; LegSide 0 0; 0 0 -1]; %[0 LegSide 0 ; 1 0 0; 0 0 -1]
+T = zeros(4,4); T(1:3,1:3) = Rp*R_xp*[0 -1 0 ; 1 0 0; 0 0 1]; %[0 LegSide 0 ; 1 0 0; 0 0 -1]
 T(:,4)=[ProthOrig';1];
 
 
@@ -215,9 +242,16 @@ ProsthesisEnd = triangulation(Prosthesis0.ConnectivityList,PtsProsthEnd);
 
 
 
-% PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, Nxp, R_xp, LegSide, d_xp, CS, PtMedialThirdOfTT, Boundary_xp )
+close all;
+PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, Nxp, R_xp, LegSide, d_xp, CS, PtMedialThirdOfTT, Boundary_xp, TTproj )
 
-
+% figure()
+% trisurf(Prosthesis)
+% hold on
+% pl3t(CurvesProsthesisTP.Pts,'r*-')
+% Boundary_ProsthesisTP = [CurvesProsthesisTP.Pts(1:5:end-1,:) ; CurvesProsthesisTP.Pts(end,:)];
+% 
+% 
 [ CtrltyScore, Tabl ] = CentralityScore(ProxTib, Prosthesis, ProsthesisEnd, StemTip, LegSide);
 writetable(Tabl,['Centrality_' SubjectCode '_alpha' num2str(alpha) '.txt'])
 

@@ -1,4 +1,4 @@
-function [ Prosthesis, StemCenter, Thickness, size ] = SelectImplantSize(CWD, PC_ML_Width, PC_AP_Width, Prosth_Type, LongStem, reduceSize )
+function [ Prosthesis, StemCenter, Thickness, size ] = SelectImplantSize(CWD, PC_ML_Width, PC_AP_Width, Prosth_Type, LongStem, LegSideName , reduceSize )
 %Select prosthesis based on antero-Post & Medio-Lat widths
 %
 
@@ -15,17 +15,17 @@ switch Prosth_Type
         Thickness = 2.5;
         
     case 3
-        Type = {'C','D','E','F','G'};
-        Size = [44.9	39.5	63.8;
-                47.2	41.8	67;
-                50.2	44.6	71;
-                53.3	47.4	75.1;
-                56.5	50.2	79];
-        Widths = [Size(:,3), 0.8*Size(:,2) + 0.2*Size(:,1)] ;
+        Type = {'SizeC','SizeD','SizeE','SizeF','SizeG'};
+        Dims = [44.9	39.5	63.8;
+            47.2	41.8	67;
+            50.2	44.6	71;
+            53.3	47.4	75.1;
+            56.5	50.2	79];
+        Widths = [Dims(:,3), 0.8*Dims(:,2) + 0.2*Dims(:,1)] ;
         Thickness = 3.8;
         
-
-
+        
+        
 end
 % Choose inferior size if it's too large MedioLaterally
 k = dsearchn(Widths,[PC_ML_Width PC_AP_Width]);
@@ -33,7 +33,7 @@ if Widths(k,1)-PC_ML_Width<0 && k>1
     k=k-1;
 end
 
-if nargin == 6
+if nargin == 7
     warning(strcat('Implant size have been reduced: old size :',char(Type(k))));
     k=k-1;
     k=max(1,k);
@@ -41,6 +41,10 @@ if nargin == 6
 end
 
 size = char(Type(k));
+
+if Prosth_Type ==3
+    size = strcat(size,'_',LegSideName);
+end
 
 if LongStem
     size = strcat(size,'_WLS');
@@ -64,7 +68,7 @@ ProsthFileName = char(ProsthFileName);
 
 
 
-% Thickness of the slice in distal points for stem tip center calculation 
+% Thickness of the slice in distal points for stem tip center calculation
 ht = 5;
 
 switch Prosth_Type
@@ -78,6 +82,16 @@ switch Prosth_Type
         Zmin = Prosthesis.Points(Izmin,3);
         StemCenter = mean(Prosthesis.Points(Prosthesis.Points(:,3)<Zmin+ht,:))+...
             [0 0 -ht/2];
+        
+    case 3
+        [~,Izmin] = min(Prosthesis.Points(:,3));
+        Zmin = Prosthesis.Points(Izmin,3);
+        StemCenter = mean(Prosthesis.Points(Prosthesis.Points(:,3)<Zmin+ht,:))+...
+            [0 0 -ht/2];
+        Centroid = mean(Prosthesis.Points);
+        Centroid(3) = 0;
+        Centroid(2) = 0.8*range(Prosthesis.Points(:,2));
+        Prosthesis = triangulation(Prosthesis.ConnectivityList,bsxfun(@minus,Prosthesis.Points, Centroid));
 end
 
 end

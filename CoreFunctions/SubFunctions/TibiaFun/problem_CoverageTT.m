@@ -54,7 +54,7 @@ function [ x,fval,history ] = problem_CoverageTT( x0,Boundary_xp_inRxp, Boundary
         d = p_poly_dist(ProsthContourTR(:,1), ProsthContourTR(:,2), Boundary_xp_inRxp(:,1), Boundary_xp_inRxp(:,2));
 
         % Criterium 1 : No overhang of the implant
-        C1 = 30 * mean(exp(d+0.25).^2);  % Cost function , d+0.5 for penalty if the prosthesis is too close of the edges
+        C1 = 30 * mean(exp(d+0.25).^2);  % Cost function , d+0.25 for penalty if the prosthesis is too close of the edges
 
         % Criterium 2 : Implant oriented towards the Tibial tuberosity
         deltaTheta = rad2deg(x(3))-rad2deg(Theta);
@@ -63,7 +63,7 @@ function [ x,fval,history ] = problem_CoverageTT( x0,Boundary_xp_inRxp, Boundary
         % Criterium 3 : orientation vs cut plan;
 %         C3 = 200*abs(x(3));
 
-        % Overall, sum of the three criteria
+        % Overall, sum of the two criteria
         C = C1 + C2;
 %         C = C1 + C2 + C3;
 

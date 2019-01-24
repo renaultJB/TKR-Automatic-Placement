@@ -1,4 +1,4 @@
-function PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, Nxp, R_xp, LegSide, d_xp, CS, PtMedialThirdOfTT, Boundary_xp, TTproj )
+function PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, Nxp, R_xp, LegSide, d_xp, CS, PtMedialThirdOfTT, Boundary_xp, TT_on_xp )
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -24,6 +24,11 @@ PtsTibPts0(:,4)=[];
 
 PtMedialThirdOfTT = transpose(Ttib*[PtMedialThirdOfTT';1]);
 PtMedialThirdOfTT(4)=[];
+
+TT_on_xp(4) = 1;
+TT_on_xp = transpose(Ttib*TT_on_xp');
+TT_on_xp(4) = [];
+
 
 % figure(200)
 % trisurf(ProxTibCutted,'Facecolor',[0.65    0.65    0.6290],'FaceAlpha',0.75,'edgecolor','none'); % 0.8,0.8,0.85
@@ -78,7 +83,7 @@ for i = 1 : length(history)
     PtsProsth0 = Prosthesis0.Points;
     PtsProsth0(:,4) = ones(length(PtsProsth0),1);
     
-    T = zeros(4,4); T(1:3,1:3) = Rp*R_xp*[0 -1 0 ; 1 0 0; 0 0 1]; %[0 LegSide 0 ; 1 0 0; 0 0 -1]
+    T = zeros(4,4); T(1:3,1:3) = Rp*R_xp*[0 -LegSide 0 ; LegSide 0 0; 0 0 1]; %[0 LegSide 0 ; 1 0 0; 0 0 -1]
     T(:,4)=[ProthOrig';1];
     
     
@@ -102,7 +107,7 @@ for i = 1 : length(history)
     %     plotDot( PtMedialThirdOfTT, 'r', 2 )
     trisurf(ProsthesisEnd,'Facecolor','g','FaceAlpha',1,'edgecolor','none');
     plotDot( PtMedialThirdOfTT, 'r', 1.5 )
-    plotDot( TTproj, 'g', 2 )
+    plotDot( TT_on_xp, 'g', 2 )
     hold on
     grid off
     axis off

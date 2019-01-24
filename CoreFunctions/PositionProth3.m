@@ -33,7 +33,7 @@ tic
 % Prescribed Posterior slope of the implant relative to mechanical axis
 beta0 = 5;
 Zoffset_tp = 7; % offset of the tibial plateau plan to calculate dimension
-ResectionOffset = 3.5 ;
+ResectionOffset = 2 ;
 CmtThickness = 1.5;
 
 %% Files and folders handling
@@ -57,6 +57,13 @@ else
     
     %% Read mesh files of the proximal an distal tibia
     [ProxTib,DistTib] = ReadMesh( ProxTibMeshFile, DistTibMeshFile );
+    
+    VVV =    [  0.9117    0.1078   -0.2949;
+                -0.3419    0.9705   -0.1720;
+                0.2279    0.2157    0.9217];
+
+    [ ProxTib, ~, ~ ] = TriChangeCS( ProxTib, VVV, [0 0 0]' );
+    [ DistTib, ~, ~ ] = TriChangeCS( DistTib, VVV, [0 0 0]' );
     
     %% Construct the coordinates system of the tibia
     [ CSs, TrObjects ] = RTibiaFun( ProxTib , DistTib);
@@ -133,8 +140,8 @@ AP_Width_xp = range(Boundary_xp*U_xp);
 
 
 % Adapt to the coordinate frame and leg side [Specific of the prosthesis geometry]                 
-StemTip = StemTip*[0 -1 0 ; 1 0 0; 0 0 1]'; % [0 LegSide 0 ; LegSide 0 0; 0 0 -1] %[0 1 0 ; LegSide 0 0; 0 0 -1
-Prosthesis = triangulation(Prosthesis0.ConnectivityList,transpose([0 -1 0 ; 1 0 0; 0 0 1]*Prosthesis0.Points'));
+StemTip = StemTip*[0 -LegSide 0 ; LegSide 0 0; 0 0 1]'; % [0 LegSide 0 ; LegSide 0 0; 0 0 -1] %[0 1 0 ; LegSide 0 0; 0 0 -1
+Prosthesis = triangulation(Prosthesis0.ConnectivityList,transpose([0 -LegSide 0 ; LegSide 0 0; 0 0 1]*Prosthesis0.Points'));
 
 % Elmts2D = fixNormals( Prosthesis.Points, Prosthesis.ConnectivityList );
 % Prosthesis = triangulation(Elmts2D,Prosthesis.Points);
@@ -144,7 +151,7 @@ Start_Point = Centroid_xp-U_xp'*0.36*LegSide*AP_Width_xp+0.02*V_xp'*ML_Width_xp.
 
 Oxp = Start_Point -(Thickness+CmtThickness)*Nxp';
 
-% Move Stem Tip in CT Cooridante frame
+% Move Stem Tip in CT Coordinate frame
 StemTip_CT = R_xp*StemTip' + Start_Point';
 
 CurveStemTip = TriPlanIntersect(ProxTib,Nxp,StemTip_CT);
@@ -155,7 +162,7 @@ CDiaphysisStemTip_CT = PlanPolygonCentroid3D(BoundaryStemTip); % Center of bone 
 
 %% Optimization Stem Tip Position made in the prosthesis coordinate system
 Boundary_xp_inRxp = transpose(R_xp'*bsxfun(@minus,Boundary_xp,Oxp)');
-Boundary_xp_inRxp = Boundary_xp_inRxp(1:7:end-1,:); 
+Boundary_xp_inRxp = Boundary_xp_inRxp(1:7:end-1,:); % Reduce Boundary Matriw weight
 CDiaphysisStemTip = transpose(R_xp'*(CDiaphysisStemTip_CT-Oxp)');
 
 CurvesProsthesisTP = TriPlanIntersect(Prosthesis,[10^-6; 10^-6; 1],0); %10^-6 to avoid numerical error
@@ -172,16 +179,26 @@ end
 CurvesProsthesisTP = CurvesProsthesisTP(iMax);
     
 
-figure()
+figure(50)
 trisurf(Prosthesis)
 hold on
 pl3t(CurvesProsthesisTP.Pts,'r*-')
+
+
 Boundary_ProsthesisTP = [CurvesProsthesisTP.Pts(1:5:end-1,:) ; CurvesProsthesisTP.Pts(end,:)];
 
+TT_on_xp = LinePlanIntersect( PtMedialThirdOfTT, CS.Z, Nxp, Oxp );
+TTproj = transpose( R_xp'*(TT_on_xp' - Oxp'));
 
-TTproj = transpose( R_xp'*( PtMedialThirdOfTT' + (Oxp - PtMedialThirdOfTT)*Nxp/(Nxp'*CS.Z)*CS.Z - Oxp'));
+figure(51)
+pl3t(CurvesProsthesisTP.Pts,'r-')
+axis equal
+hold on
+pl3t(Boundary_xp_inRxp,'g-')
+plotDot(TTproj,'m',2)
 
-%% Optimisation of the placement of the prosthesis
+
+%% Optimization of the placement of the prosthesis
     % Limit overhang
     % Orient prosthesis toward the tibial tuberosity
     % Orient prosthesis in the CS.X axis
@@ -230,7 +247,7 @@ PtsProsth0 = Prosthesis0.Points;
 PtsProsth0(:,4) = ones(length(PtsProsth0),1);
 
 
-T = zeros(4,4); T(1:3,1:3) = Rp*R_xp*[0 -1 0 ; 1 0 0; 0 0 1]; %[0 LegSide 0 ; 1 0 0; 0 0 -1]
+T = zeros(4,4); T(1:3,1:3) = Rp*R_xp*[0 -LegSide 0 ; LegSide 0 0; 0 0 1]; %[0 LegSide 0 ; 1 0 0; 0 0 -1]
 T(:,4)=[ProthOrig';1];
 
 
@@ -242,8 +259,8 @@ ProsthesisEnd = triangulation(Prosthesis0.ConnectivityList,PtsProsthEnd);
 
 
 
-close all;
-PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, Nxp, R_xp, LegSide, d_xp, CS, PtMedialThirdOfTT, Boundary_xp, TTproj )
+% close all;
+PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, Nxp, R_xp, LegSide, d_xp, CS, PtMedialThirdOfTT, Boundary_xp, TT_on_xp )
 
 % figure()
 % trisurf(Prosthesis)

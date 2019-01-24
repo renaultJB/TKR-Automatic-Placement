@@ -49,6 +49,8 @@ for xAlt = AltitudesFract
     % Tibia Z axis
     Curve = TriPlanIntersect(ProxTib,CS.Z,-(xAlt*CS.AltStartEpiph+(1-xAlt)*CS.AltEndDiaph));
     CSPts0 = Curve.Pts;
+    
+    % Move the intersection in the Tibia Coordinate Frame
     CSPtsRt = transpose(CS.V'*CSPts0');
     [ Centroid, ~ ] = PlanPolygonCentroid3D( CSPtsRt );
     

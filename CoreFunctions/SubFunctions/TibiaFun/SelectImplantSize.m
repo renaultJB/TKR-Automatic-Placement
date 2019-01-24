@@ -22,7 +22,7 @@ switch Prosth_Type
             53.3	47.4	75.1;
             56.5	50.2	79];
         Widths = [Dims(:,3), 0.8*Dims(:,2) + 0.2*Dims(:,1)] ;
-        Thickness = 3.8;
+        Thickness = 4.5;
         
         
         
@@ -83,15 +83,45 @@ switch Prosth_Type
         StemCenter = mean(Prosthesis.Points(Prosthesis.Points(:,3)<Zmin+ht,:))+...
             [0 0 -ht/2];
         
-    case 3
+    case 3        
         [~,Izmin] = min(Prosthesis.Points(:,3));
         Zmin = Prosthesis.Points(Izmin,3);
         StemCenter = mean(Prosthesis.Points(Prosthesis.Points(:,3)<Zmin+ht,:))+...
             [0 0 -ht/2];
+        
         Centroid = mean(Prosthesis.Points);
-        Centroid(3) = 0;
         Centroid(2) = 0.8*range(Prosthesis.Points(:,2));
+        
+        ElmtFaceSup = find( Prosthesis.faceNormal*[0;0;1]>0.999 );
+        ProsthesisFaceSup = TriReduceMesh( Prosthesis, ElmtFaceSup);
+        ProsthesisFaceSup = TriKeepLargestPatch( ProsthesisFaceSup );
+        centroidFaceSup = mean(ProsthesisFaceSup.incenter);
+        
+        ElmtFaceInf = find( Prosthesis.faceNormal*[0;0;-1]>0.99 );
+        ProsthesisFaceInf = TriReduceMesh( Prosthesis, ElmtFaceInf);
+        ProsthesisFaceInf = TriKeepLargestPatch( ProsthesisFaceInf );
+        centroidFaceInf = mean(ProsthesisFaceInf.incenter);
+        
+        ThicknessComputed = centroidFaceSup(3)-centroidFaceInf(3);
+        if abs(ThicknessComputed-Thickness)/Thickness > 0.1
+            warning('Check implant geometry -> computed implant thickness is quite different than theorical thickness')
+            figure(193)
+            trisurf(Prosthesis)
+            hold on
+            trisurf(ProsthesisFaceSup,'FaceColor','r')
+            trisurf(ProsthesisFaceInf,'FaceColor','r')
+            axis equal
+        end
+        
+        Centroid(3) = centroidFaceSup(3);
         Prosthesis = triangulation(Prosthesis.ConnectivityList,bsxfun(@minus,Prosthesis.Points, Centroid));
+%         
+%         figure(201)
+%         trisurf(Prosthesis)
+%         hold on
+%         axis equal
+
+        
 end
 
 end

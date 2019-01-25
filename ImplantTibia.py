@@ -84,48 +84,46 @@ for alpha in [0.0 , 100.0] :
     print(ML_Width)    
     
     os.chdir(cwd)
-
-    f = open('ScriptFreeCAD.py','r')
-    filedata = f.read()
-    f.close()
-    
-    paths2STPfiles = find_ProsthFiles(os.getcwd(),ProstName,TypeProth)
-
-    newdata = filedata.replace("NAME",SubjectCode)
-    newdata = newdata.replace("PATH2CEMENT",str(paths2STPfiles[0]))
-    newdata = newdata.replace("PATH2CUT",str(paths2STPfiles[1]))
-    newdata = newdata.replace("PATH2IMPLANT",str(paths2STPfiles[2]))
-    newdata = newdata.replace("CWD",cwd)
-    newdata = newdata.replace("ALPHA",str(alpha))
-    newdata = newdata.replace("AP_WIDTH",str(AP_Width))
-    newdata = newdata.replace("ML_WIDTH",str(ML_Width))
-    newdata = newdata.replace("NEW_PLACEMENT_MATRIX",T)
-    newdata = newdata.replace("NEW_PLACEMENT_ANAT_MATRIX",Tanat)
-    if LongStem != 1:
-        newdata = newdata.replace("_WLS","")
-    newdata = newdata.replace("SIZE",ProstName)
-    finaldata = newdata.replace("\\","\\\\")
-
-    f = open('ScriptFreeCAD_'+SubjectCode +'.py','w')
-    f.write(finaldata)
-    f.close()
-    subprocess.call(["FreeCADcmd", 'ScriptFreeCAD_'+SubjectCode +'.py'], shell=True)
-    
-    if alpha%1 == 0 :
-        os.rename(cwd+"\\"+"Output_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Output_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt")
-        os.rename(cwd+"\\"+"Centrality_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Centrality_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt")
-    else :
-        os.rename(cwd+"\\"+"Output_" + SubjectCode + "_alpha" + str(alpha)+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Output_" + SubjectCode + "_alpha" + str(alpha)+ ".txt")
-        os.rename(cwd+"\\"+"Centrality_" + SubjectCode + "_alpha" + str(alpha)+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Centrality_" + SubjectCode + "_alpha" + str(alpha)+ ".txt")
+#
+#    f = open('ScriptFreeCAD.py','r')
+#    filedata = f.read()
+#    f.close()
+#    
+#    paths2STPfiles = find_ProsthFiles(os.getcwd(),ProstName,TypeProth)
+#
+#    newdata = filedata.replace("NAME",SubjectCode)
+#    newdata = newdata.replace("PATH2CEMENT",str(paths2STPfiles[0]))
+#    newdata = newdata.replace("PATH2CUT",str(paths2STPfiles[1]))
+#    newdata = newdata.replace("PATH2IMPLANT",str(paths2STPfiles[2]))
+#    newdata = newdata.replace("CWD",cwd)
+#    newdata = newdata.replace("ALPHA",str(alpha))
+#    newdata = newdata.replace("AP_WIDTH",str(AP_Width))
+#    newdata = newdata.replace("ML_WIDTH",str(ML_Width))
+#    newdata = newdata.replace("NEW_PLACEMENT_MATRIX",T)
+#    newdata = newdata.replace("NEW_PLACEMENT_ANAT_MATRIX",Tanat)
+#    if LongStem != 1:
+#        newdata = newdata.replace("_WLS","")
+#    newdata = newdata.replace("SIZE",ProstName)
+#    finaldata = newdata.replace("\\","\\\\")
+#
+#    f = open('ScriptFreeCAD_'+SubjectCode +'.py','w')
+#    f.write(finaldata)
+#    f.close()
+#    subprocess.call(["FreeCADcmd", 'ScriptFreeCAD_'+SubjectCode +'.py'], shell=True)
+#    
+#    if alpha%1 == 0 :
+#        os.rename(cwd+"\\"+"Output_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Output_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt")
+#        os.rename(cwd+"\\"+"Centrality_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Centrality_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt")
+#    else :
+#        os.rename(cwd+"\\"+"Output_" + SubjectCode + "_alpha" + str(alpha)+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Output_" + SubjectCode + "_alpha" + str(alpha)+ ".txt")
+#        os.rename(cwd+"\\"+"Centrality_" + SubjectCode + "_alpha" + str(alpha)+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Centrality_" + SubjectCode + "_alpha" + str(alpha)+ ".txt")
         
             
-
-
 
 eng.quit()
 
 
-os.remove('ScriptFreeCAD_'+SubjectCode +'.py')
+#os.remove('ScriptFreeCAD_'+SubjectCode +'.py')
 os.rename(cwd+"\\"+"Tibia_" + SubjectCode + ".msh",cwd+"\\Output\\"+SubjectCode+"\\Tibia_" + SubjectCode + ".msh")
 os.rename(cwd+"\\"+"DistTibia_" + SubjectCode + ".msh",cwd+"\\Output\\"+SubjectCode+"\\DistTibia_" + SubjectCode + ".msh")
 

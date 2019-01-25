@@ -23,8 +23,8 @@ if PosFiles!=1 :
     PosFiles=0
 
 if MeshExist!=1 :
-    ElmtSize2D = 0.51
-TypeProth = input("Prosthesis Type ? (1 for Old, 2 for recent): ")
+    ElmtSize2D = 0.5
+TypeProth = input("Prosthesis Type ? (1 for Sym, 2 for alt Sym, 3 for ASym): ")
 
 print("\n###########################################\n######### END OF USER INPUT ###############\n###########################################\n")
 
@@ -71,7 +71,7 @@ eng = matlab.engine.start_matlab()
 os.chdir(cwd)
 # [-12.0,-8.0,-4.0,0.0,4.0,8.0,12.0]
 # [-4.5,-1.5,1.5,4.5]
-for alpha in [-10.0, -7.5, -5.0, -2.5 , 0.0 , 2.5 , 5.0] :
+for alpha in [0.0 , 100.0] :
     
     os.chdir(cwd+'\\CoreFunctions')
     
@@ -79,6 +79,8 @@ for alpha in [-10.0, -7.5, -5.0, -2.5 , 0.0 , 2.5 , 5.0] :
         T, Tanat, ML_Width , AP_Width, ProstName = eng.PositionProth2(SubjectCode,alpha,LongStem,nargout=5)
     elif TypeProth == 1 :
         T, Tanat, ML_Width , AP_Width, ProstName = eng.PositionProth1(SubjectCode,alpha,LongStem,nargout=5)
+    elif TypeProth == 3 :
+        T, Tanat, ML_Width , AP_Width, ProstName = eng.PositionProth3(SubjectCode,alpha,LongStem,nargout=5)
     print(ML_Width)    
     
     os.chdir(cwd)

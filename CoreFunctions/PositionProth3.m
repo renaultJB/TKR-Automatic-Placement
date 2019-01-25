@@ -274,10 +274,7 @@ PtsProsthEnd(:,4)=[];
 
 ProsthesisEnd = triangulation(Prosthesis0.ConnectivityList,PtsProsthEnd);
 
-
-
 close all;
-
 PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, Nxp, R_xp, LegSide, d_xp, CS, PtMedialThirdOfTT, Boundary_xp, TT_on_xp )
 PlotTibiaDeformation(TrObjects, ProsthesisEnd, PtMedialThirdOfTT, CS )
 
@@ -285,9 +282,10 @@ ProsthesisShape2 = TriPlanIntersect(Prosthesis,[10^-6; 10^-6; 1],-0.15);
 [ coverage, malRotation ] = OptimOutput( x, Boundary_xp_inRxp, Boundary_ProsthesisTP, TTproj, ProsthesisShape2, LegSide );
 
 %% Write Results
-
 figHandles = findobj('Type', 'figure');
 figName = ['Figs_' SubjectCode '_alpha' num2str(alpha) '.fig'];
+imgName = ['Figs_' SubjectCode '_alpha' num2str(alpha) '.png'];
+saveas(gcf,imgName)
 savefig(figHandles,figName,'compact');
 save(TmpFileName,'ProxTib','DistTib','CS','TrObjects','PtMedialThirdOfTT','LegSideName') 
 

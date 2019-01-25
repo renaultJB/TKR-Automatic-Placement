@@ -21,17 +21,23 @@ switch Prosth_Type
             50.2	44.6	71;
             53.3	47.4	75.1;
             56.5	50.2	79];
-        Widths = [Dims(:,3), 0.8*Dims(:,2) + 0.2*Dims(:,1)] ;
-        Thickness = 4.5;
-        
-        
-        
+        Widths = [Dims(:,3), 0.55*Dims(:,2) + 0.55*Dims(:,1)] ;
+        Thickness = 4.5;      
 end
+
 % Choose inferior size if it's too large MedioLaterally
 k = dsearchn(Widths,[PC_ML_Width PC_AP_Width]);
-if Widths(k,1)-PC_ML_Width<0 && k>1
+
+cond1 = Widths(k,1) > PC_ML_Width;
+cond2 = Widths(k,2) > PC_AP_Width;
+condSize = cond1 | cond2;
+
+if condSize && k>1
     k=k-1;
+elseif condSize && k==1
+    warning('The implant size should have been reduced but, we do not currently have the inferior size')
 end
+
 
 if nargin == 7
     warning(strcat('Implant size have been reduced: old size :',char(Type(k))));

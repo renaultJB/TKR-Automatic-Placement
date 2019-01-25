@@ -15,6 +15,7 @@ tempFiles/
 *.mp4
 *.db
 *.fig
+*.pos
 output_*.txt
 Output_*.txt
 Centrality_*.txt

@@ -16,6 +16,7 @@ tempFiles/
 *.db
 *.fig
 *.pos
+*.png
 output_*.txt
 Output_*.txt
 Centrality_*.txt

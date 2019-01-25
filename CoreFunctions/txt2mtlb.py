@@ -99,6 +99,11 @@ def find_ProsthFile(directory,Pname,Ptype):
         C = A
     elif B :
         C = B
+    else :
+        print('File not found')
+        print('Currently looking from: ' + directory)
+        print(PnameMSH + ' or ' + PnameSTL)
+
 
     
 #    print(Pname)

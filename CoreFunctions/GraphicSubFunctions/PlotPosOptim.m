@@ -1,4 +1,4 @@
-function PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, Nxp, R_xp, LegSide, d_xp, CS, PtMedialThirdOfTT, Boundary_xp, TT_on_xp )
+function PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, Nxp, R_xp, LegSide, d_xp, CS, PtMedialThirdOfTT, Boundary_xp, TT_on_xp, prosth_type )
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -28,6 +28,14 @@ PtMedialThirdOfTT(4)=[];
 TT_on_xp(4) = 1;
 TT_on_xp = transpose(Ttib*TT_on_xp');
 TT_on_xp(4) = [];
+
+%Transform R_implant :
+if prosth_type == 1 
+    R_implant = [0 LegSide 0 ; 1 0 0; 0 0 -1];
+elseif prosth_type == 3
+    R_implant = [0 -LegSide 0 ; LegSide 0 0; 0 0 1];
+end
+
 
 
 % figure(200)
@@ -83,7 +91,7 @@ for i = 1 : length(history)
     PtsProsth0 = Prosthesis0.Points;
     PtsProsth0(:,4) = ones(length(PtsProsth0),1);
     
-    T = zeros(4,4); T(1:3,1:3) = Rp*R_xp*[0 -LegSide 0 ; LegSide 0 0; 0 0 1]; %[0 LegSide 0 ; 1 0 0; 0 0 -1]
+    T = zeros(4,4); T(1:3,1:3) = Rp*R_xp*R_implant; %[0 LegSide 0 ; 1 0 0; 0 0 -1]
     T(:,4)=[ProthOrig';1];
     
     

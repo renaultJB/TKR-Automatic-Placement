@@ -2,7 +2,9 @@ function [ Prosthesis, StemCenter, Thickness, size ] = SelectImplantSize(CWD, PC
 %Select prosthesis based on antero-Post & Medio-Lat widths
 %
 
-
+% Minimal offset in % of characteritqiue length between bone and implant
+bone_margin = 2.5;
+bone_margin = bone_margin/100;
 
 switch Prosth_Type
     case 1
@@ -28,15 +30,28 @@ end
 % Choose inferior size if it's too large MedioLaterally
 k = dsearchn(Widths,[PC_ML_Width PC_AP_Width]);
 
-cond1 = Widths(k,1) > PC_ML_Width;
-cond2 = Widths(k,2) > PC_AP_Width;
+cond1 = Widths(k,1) > (1-bone_margin)*PC_ML_Width;
+cond2 = Widths(k,2) > (1-bone_margin)*PC_AP_Width;
 condSize = cond1 | cond2;
 
-if condSize && k>1
+% if condSize && k>1
+%     k=k-1;
+% elseif condSize && k==1
+%     warning('The implant size should have been reduced but, we do not currently have the inferior size')
+% end
+
+while condSize && k>1
     k=k-1;
-elseif condSize && k==1
-    warning('The implant size should have been reduced but, we do not currently have the inferior size')
+    
+    cond1 = Widths(k,1) > (1-bone_margin)*PC_ML_Width;
+    cond2 = Widths(k,2) > (1-bone_margin)*PC_AP_Width;
+    condSize = cond1 | cond2;
+    
+    if condSize && k==1
+        warning('The implant size should have been reduced but, we do not currently have the inferior size')
+    end
 end
+    
 
 
 if nargin == 7

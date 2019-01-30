@@ -109,7 +109,7 @@ Angle_Slope = LegSide*rad2deg(asin(Ztp__ProjmechXZ'*CS.X));
 % ---- Case for kinematic Alignement ---
 % if a alpha angle provided is over a certain value the program
 % "understand" that a kinematic alignement is prescibed 
-if abs(alpha) > 50 
+if abs(alpha) > 40 
     alpha = -Angle_Varus;
     beta0 = abs(Angle_Slope);
     KA = 1; %Kinematic Alignment.
@@ -275,7 +275,7 @@ PtsProsthEnd(:,4)=[];
 ProsthesisEnd = triangulation(Prosthesis0.ConnectivityList,PtsProsthEnd);
 
 close all;
-PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, Nxp, R_xp, LegSide, d_xp, CS, PtMedialThirdOfTT, Boundary_xp, TT_on_xp )
+PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, Nxp, R_xp, LegSide, d_xp, CS, PtMedialThirdOfTT, Boundary_xp, TT_on_xp, 3 )
 PlotTibiaDeformation(TrObjects, ProsthesisEnd, PtMedialThirdOfTT, CS )
 
 ProsthesisShape2 = TriPlanIntersect(Prosthesis,[10^-6; 10^-6; 1],-0.15);

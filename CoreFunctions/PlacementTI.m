@@ -30,10 +30,10 @@ function [ Tstring , T_str_anat , ML_Width_xp , AP_Width_xp , ProstName] = Place
 
 %% Parameters
 % Prescribed Posterior slope of the implant relative to mechanical axis
-beta0 = 5;
+beta = 5;
 Zoffset_tp = 10; % offset of the tibial plateau plan to calculate dimension
 ResectionOffset = 5 ;
-CmtThickness = 1;
+CmtThickness = 0;
 
 %% Files and folders handling
 addpath(genpath(strcat(pwd,'\SubFunctions')))
@@ -103,7 +103,7 @@ Angle_Slope = LegSide*rad2deg(asin(Ztp__ProjmechXZ'*CS.X));
 % "understand" that a kinematic alignement is prescibed 
 if abs(alpha) > 30 
     alpha = -Angle_Varus;
-    beta0 = abs(Angle_Slope);
+    beta = abs(Angle_Slope);
     KA = 1; %Kinematic Alignment.
 else
     KA = 0;
@@ -171,13 +171,15 @@ theta_TTA = rad2deg(acos(CS.Y'*U_TTA));
 
 %% Switch between specifities of implants
 switch implantType
-    case {'Nexgen','nexgen',1} 
+    case {'Nexgen','nexgen',1}
+        prosth_type = 1;
         [ Prosthesis0, StemTip, Thickness , ProstName ] = ...
         SelectImplantSize(RootDir, ML_Width_xp, AP_Width_xp, 1, LongStem );
         
-        TI_speTransfo = [0 LegSide 0 ; 1 0 0; 0 0 -1]; % [0 LegSide 0 ; LegSide 0 0; 0 0 -1]
-        
+%         TI_speTransfo = [0 LegSide 0 ; 1 0 0; 0 0 -1]; % [0 LegSide 0 ; LegSide 0 0; 0 0 -1]
+        TI_speTransfo = [0 LegSide 0 ; LegSide 0 0; 0 0 -1] ;
     case {'Persona','persona',3}
+        prosth_type = 3;
         [ Prosthesis0, StemTip, Thickness , ProstName ] = ...
         SelectImplantSize(RootDir, ML_Width_xp, AP_Width_xp, 3, LongStem, LegSideName );
 
@@ -237,7 +239,6 @@ pl3t(CurvesProsthesisTP.Pts,'r-')
 axis equal
 hold on
 pl3t(Boundary_xp_inRxp,'g-')
-plotDot(TTproj,'m',1.5)
 plotDot([0,0,0],'r',0.5)
 
 
@@ -264,27 +265,16 @@ O_it0 = PlanPolygonCentroid3D(Boundary_ProsthesisTP);
 x0(1) = - O_it0(1);
 x0(2) = - O_it0(2);
 x0(3) = theta_TTA - 18 - 90;
-% x0(3) = 0;
+x0(3) = 0;
 
 figure(10)
 pl3t(Boundary_xp_inRxp,'k-')
 hold on
 axis equal
 pl3t(Boundary_ProsthesisTP,'r-')
-plotDot(TTproj,'r',2)
 
-if abs(StemTip(3))>100
-    f = @(x)CenteringStemTipGoal(x , Boundary_xp_inRxp , Boundary_ProsthesisTP , StemTip);  % C or CDiaphysisStemTip
-    fcon = @(x)CoverageCost(x, Boundary_xp_inRxp, Boundary_ProsthesisTP , TTproj);
-    x = fmincon(f,x0,A,b,Aeq,beq,lb,ub,fcon);
-else
-%     f = @(x)CoverageCost(x, Boundary_xp_inRxp, Boundary_ProsthesisTP , TTproj);  % C or CDiaphysisStemTip
-%     options = optimoptions(@fminunc,'Algorithm','quasi-newton','MaxFunctionEvaluations',500);
-%     [x,fval,history] = fminunc(f,x0,options);
-    [ x,fval,history ] = optimC_PlacementTI_xp( x0, A,b,Aeq,beq,lb,ub, Boundary_xp_inRxp, Boundary_ProsthesisTP , CS, R_xp, theta_TTA );
-    
-%     [ x,fval,history ] = optimUC_PlacementTI_xp( x0, Boundary_xp_inRxp, Boundary_ProsthesisTP , CS, R_xp, theta_TTA );
-end
+[ x,fval,history ] = optimC_PlacementTI_xp( x0, A,b,Aeq,beq,lb,ub, Boundary_xp_inRxp, Boundary_ProsthesisTP , CS, R_xp, theta_TTA );   
+% [ x,fval,history ] = optimUC_PlacementTI_xp( x0, Boundary_xp_inRxp, Boundary_ProsthesisTP , CS, R_xp, theta_TTA );
 
 ProthOrig = Start_Point + x(1)*U_xp' + x(2)*V_xp';
 Rp = rot(Nxp,x(3));
@@ -311,7 +301,7 @@ PtsProsthEnd(:,4)=[];
 ProsthesisEnd = triangulation(Prosthesis0.ConnectivityList,PtsProsthEnd);
 
 close all;
-PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, Nxp, R_xp, LegSide, d_xp, CS, PtMiddleOfTT, Boundary_xp, TT_on_xp, 3 )
+PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, Nxp, R_xp, LegSide, d_xp, CS, PtMiddleOfTT, Boundary_xp, TT_on_xp, TI_speTransfo )
 PlotTibiaDeformation(TrObjects, ProsthesisEnd, PtMiddleOfTT, CS )
 
 ProsthesisShape2 = TriPlanIntersect(Prosthesis,[10^-6; 10^-6; 1],-0.15);
@@ -338,7 +328,7 @@ end
 outPut(end).angleVV = -Angle_Varus;
 outPut(end).angleTS = Angle_Slope;
 outPut(end).angleAlignF = alpha;
-outPut(end).angleAlignAP = beta0;
+outPut(end).angleAlignAP = beta;
 
 savePath = [pwd '\Output.mat'];
 save(savePath,'outPut')

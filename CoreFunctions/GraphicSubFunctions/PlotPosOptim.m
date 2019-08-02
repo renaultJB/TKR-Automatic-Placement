@@ -30,13 +30,6 @@ TT_on_xp = transpose(Ttib*TT_on_xp');
 TT_on_xp(4) = [];
 
 %Transform R_implant :
-if prosth_type == 1 
-    R_implant = [0 LegSide 0 ; 1 0 0; 0 0 -1];
-elseif prosth_type == 3
-    R_implant = [0 -LegSide 0 ; LegSide 0 0; 0 0 1];
-end
-
-
 
 % figure(200)
 % trisurf(ProxTibCutted,'Facecolor',[0.65    0.65    0.6290],'FaceAlpha',0.75,'edgecolor','none'); % 0.8,0.8,0.85
@@ -91,7 +84,7 @@ for i = 1 : length(history)
     PtsProsth0 = Prosthesis0.Points;
     PtsProsth0(:,4) = ones(length(PtsProsth0),1);
     
-    T = zeros(4,4); T(1:3,1:3) = Rp*R_xp*R_implant; %[0 LegSide 0 ; 1 0 0; 0 0 -1]
+    T = zeros(4,4); T(1:3,1:3) = Rp*R_xp*TI_speTransfo; %[0 LegSide 0 ; 1 0 0; 0 0 -1]
     T(:,4)=[ProthOrig';1];
     
     

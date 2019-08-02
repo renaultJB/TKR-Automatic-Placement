@@ -13,7 +13,8 @@ function [ PtMedialThirdOfTT, LegSide, PtsMedThird, PtsTT, PtMiddleOfTT ] = Tibi
 %   - Proxtib : Triangulation object representing the tibia bone
 %   - CS : A structure of the constructed coordinate system associated to 
 %          the tibia bone
-%   - plots : a boolean, '1' to plot results, '0' to not plot
+%   - plots : a code, '2' to plot local and global results, 
+%             '1' to plot only global results, '0' no plot
 %
 %   Outputs:
 %   - PtMedialThirdOfTT : A point on the original mesh that is between the
@@ -92,10 +93,10 @@ for xAlt = AltitudesFract
     % Test the most the least flat side(higher sigma value of gaussian fit)
     if fitresultPos.c1 < fitresultNeg.c1
         IDX0 = knnsearch(CSPtsRtC0,[fitresultPos.a1 fitresultPos.b1 0]);
-        LegSide = 'R' 
+        LegSide = 'R';
     else
         IDX0 = knnsearch(CSPtsRtC0,[-fitresultNeg.a1 fitresultNeg.b1 0]);
-        LegSide = 'L' 
+        LegSide = 'L';
     end
     
     PtTT0 = CSPtsRtC0(IDX0,:);
@@ -161,7 +162,7 @@ for xAlt = AltitudesFract
     [~,IDMiddle] = min(abs(bsxfun(@minus,PtsOnTT,MiddleOfTT)*VLineEndingOfTT));
     PtMiddleofTT = PtsOnTT(IDMiddle,:);
     
-    if plots ==1
+    if plots >=2
         % Plot fits with data.
         %     figure( 'Name', 'FitParts' );
         %     h = plot( fitresultNeg, xDataNeg, yDataNeg );
@@ -198,7 +199,7 @@ PtMedialThirdOfTT = ProxTib.Points(IDPtMedialThird,:);
 IDPtMiddle = knnsearch(ProxTib.Points,mean(PtsMid));
 PtMiddleOfTT = ProxTib.Points(IDPtMiddle,:);
 
-if plots ==1
+if plots >=1
     figure()
     trisurf(ProxTib,'Facecolor',[0.65    0.65    0.6290],...
             'FaceAlpha',1,'edgecolor','none'); % 0.8,0.8,0.85

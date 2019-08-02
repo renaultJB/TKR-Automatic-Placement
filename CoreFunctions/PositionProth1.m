@@ -153,7 +153,7 @@ Prosthesis = triangulation(Prosthesis0.ConnectivityList,transpose([0 LegSide 0 ;
 % Prosthesis = triangulation(Elmts2D,Prosthesis.Points);
 
 Start_Point = Centroid_xp-U_xp'*0.36*LegSide*AP_Width_xp+0.02*V_xp'*ML_Width_xp...
-    +(Thickness+1.5)*Nxp'; %Prosthesis thickness +1.5 cement thickness
+    +(Thickness+CmtThickness)*Nxp'; %Prosthesis thickness +1.5 cement thickness
 
 Oxp = Start_Point -(Thickness+CmtThickness)*Nxp';
 

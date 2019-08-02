@@ -104,14 +104,9 @@ switch Prosth_Type
         StemCenter = mean(Prosthesis.Points(Prosthesis.Points(:,3)<Zmin+ht,:))+...
             [0 0 -ht/2];
         
-    case 3        
-        [~,Izmin] = min(Prosthesis.Points(:,3));
-        Zmin = Prosthesis.Points(Izmin,3);
-        StemCenter = mean(Prosthesis.Points(Prosthesis.Points(:,3)<Zmin+ht,:))+...
-            [0 0 -ht/2];
-        
-        Centroid = mean(Prosthesis.Points);
-        Centroid(2) = 0.8*range(Prosthesis.Points(:,2));
+    case 3
+%         Centroid = mean(Prosthesis.Points);
+%         Centroid(2) = 0.8*range(Prosthesis.Points(:,2));
         
         ElmtFaceSup = find( Prosthesis.faceNormal*[0;0;1]>0.999 );
         ProsthesisFaceSup = TriReduceMesh( Prosthesis, ElmtFaceSup);
@@ -122,6 +117,16 @@ switch Prosth_Type
         ProsthesisFaceInf = TriReduceMesh( Prosthesis, ElmtFaceInf);
         ProsthesisFaceInf = TriKeepLargestPatch( ProsthesisFaceInf );
         centroidFaceInf = mean(ProsthesisFaceInf.incenter);
+        
+        
+        %%Posterior end med and lat 
+        Pts = Prosthesis.Points;
+        PostDist1 = max( Pts(Pts(:,1)>0 , 2) );
+        PostDist2 = max( Pts(Pts(:,1)<0 , 2) );
+ 
+        % O_it -> Origin of the tibial implant, took on the superior face
+        % of tibial tray ;
+        O_it = [0 , 0.5*(PostDist1 + PostDist2) , centroidFaceSup(3) ];
         
         ThicknessComputed = centroidFaceSup(3)-centroidFaceInf(3);
         if abs(ThicknessComputed-Thickness)/Thickness > 0.1
@@ -134,8 +139,13 @@ switch Prosth_Type
             axis equal
         end
         
-        Centroid(3) = centroidFaceSup(3);
-        Prosthesis = triangulation(Prosthesis.ConnectivityList,bsxfun(@minus,Prosthesis.Points, Centroid));
+%         Centroid(3) = centroidFaceSup(3);
+        Prosthesis = triangulation(Prosthesis.ConnectivityList,bsxfun(@minus,Prosthesis.Points, O_it));
+        
+        [~,Izmin] = min(Prosthesis.Points(:,3));
+        Zmin = Prosthesis.Points(Izmin,3);
+        StemCenter = mean(Prosthesis.Points(Prosthesis.Points(:,3)<Zmin+ht,:))+...
+            [0 0 -ht/2];
 %         
 %         figure(201)
 %         trisurf(Prosthesis)

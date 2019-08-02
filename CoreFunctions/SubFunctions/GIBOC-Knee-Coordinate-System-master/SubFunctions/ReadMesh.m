@@ -30,9 +30,7 @@ for i = 1 : nargin
         [Nodes, Elmts] = mshReadGMSH(fileName);
         t = ~any(isnan(Elmts),2);
         Elmts = Elmts(t,:);
-        
-        min(Nodes)
-        min(Elmts)
+
         % GMSH .msh file reading use a python function for speed. Old
         % Deprecated
 %         XYZELMTS = py.txt2mtlb.read_meshGMSH(fileName);

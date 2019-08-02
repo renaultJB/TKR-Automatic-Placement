@@ -252,8 +252,8 @@ plotDot([0,0,0],'r',0.5)
 % Geometric optimization problem
 lb = [-30,-20,-20];
 ub = [30,20,20];  
-A = [];
-b = [];
+A = [1,1,0;-1,-1,0;];
+b = [100,100];
 Aeq = [];
 beq = [];
 x0 = [0,0,0]; 
@@ -264,7 +264,7 @@ O_it0 = PlanPolygonCentroid3D(Boundary_ProsthesisTP);
 x0(1) = - O_it0(1);
 x0(2) = - O_it0(2);
 x0(3) = theta_TTA - 18 - 90;
-x0(3) = 0;
+% x0(3) = 0;
 
 figure(10)
 pl3t(Boundary_xp_inRxp,'k-')
@@ -281,7 +281,9 @@ else
 %     f = @(x)CoverageCost(x, Boundary_xp_inRxp, Boundary_ProsthesisTP , TTproj);  % C or CDiaphysisStemTip
 %     options = optimoptions(@fminunc,'Algorithm','quasi-newton','MaxFunctionEvaluations',500);
 %     [x,fval,history] = fminunc(f,x0,options);
-    [ x,fval,history ] = optimC_PlacementTI_xp( x0, Boundary_xp_inRxp, Boundary_ProsthesisTP , CS, R_xp, theta_TTA );
+    [ x,fval,history ] = optimC_PlacementTI_xp( x0, A,b,Aeq,beq,lb,ub, Boundary_xp_inRxp, Boundary_ProsthesisTP , CS, R_xp, theta_TTA );
+    
+%     [ x,fval,history ] = optimUC_PlacementTI_xp( x0, Boundary_xp_inRxp, Boundary_ProsthesisTP , CS, R_xp, theta_TTA );
 end
 
 ProthOrig = Start_Point + x(1)*U_xp' + x(2)*V_xp';

@@ -34,6 +34,7 @@ beta = 5;
 Zoffset_tp = 10; % offset of the tibial plateau plan to calculate dimension
 ResectionOffset = 5 ;
 CmtThickness = 0;
+PhysioTTAangle = 10;
 
 %% Files and folders handling
 addpath(genpath(strcat(pwd,'\SubFunctions')))
@@ -62,7 +63,7 @@ else
     CS = CSs.PIAASL;
 
     %% Find the tibial tuberosity of the Tibia, this also permits the identification of the legside  
-    [ PtMedialThirdOfTT, LegSideName, ~, ~, PtMiddleOfTT ] = TibialTuberosityPos(ProxTib, CS , 0);
+    [ PtMedialThirdOfTT, LegSideName, ~, ~, PtMiddleOfTT ] = TibialTuberosityPos(ProxTib, CS , 1);
        
     %% Save Mesh and associated CS
     save(TmpFileName,'ProxTib','DistTib','CS','TrObjects','PtMedialThirdOfTT','PtMiddleOfTT','LegSideName') 
@@ -90,30 +91,34 @@ At = [CS.X,CS.Y];
 CS.Paxial = At*inv(At'*At)*At';
 
 %% Perform measurements
-% Varus angle (More MMPTA than Varus Strictly speaking)
+% "Tibial Varus" angle (MMPTA)
 Ztp__ProjmechYZ = normalizeV(CS.Pfront*CS.Ztp);
 Angle_Varus = rad2deg(asin(Ztp__ProjmechYZ'*CS.Y)); %MMPTA
 
 % Tibial Slope
-Ztp__ProjmechXZ = normalizeV(CS.Psag*CS.Ztp);
-Angle_Slope = LegSide*rad2deg(asin(Ztp__ProjmechXZ'*CS.X));
+Angle_Slope = -LegSide*rad2deg(asin(CS.Ztp'*CS.X));
 
 % ---- Case for kinematic Alignement ---
 % if a alpha angle provided is over a certain value the program
 % "understand" that a kinematic alignement is prescibed 
 if abs(alpha) > 30 
     alpha = -Angle_Varus;
-    beta = abs(Angle_Slope);
+    beta = Angle_Slope;
     KA = 1; %Kinematic Alignment.
 else
     KA = 0;
 end
 
 %% Define the Cutting plan and its associated CS (U_xp, V_xp, Nxp)
-% 1st define plan normal
-Nxp =   + sin(deg2rad(beta))*CS.X ...
+% 1st define plan normal, 
+%   For right knee beta indicate the anterior rotation of the
+%   cut plan, since the clinical convention indicate positive
+%   tibial slope for posterior slope, we introduce the LegSide factor 
+Nxp =   - LegSide * sin(deg2rad(beta))*CS.X ...
         - cos(deg2rad(beta))*sin(deg2rad(alpha))*CS.Y ...
         + cos(deg2rad(beta))*cos(deg2rad(alpha))*CS.Z;
+
+
     
 % 2nd : Find minimal distance between AS and Cut plan
 distMed = bsxfun(@minus,TrObjects.EpiTibASMed.Points,CS.Origin)*Nxp;
@@ -140,6 +145,12 @@ Boundary_xp = Curve_xp(1).Pts;
 ML_Width_xp = range(Boundary_xp*V_xp);
 AP_Width_xp = range(Boundary_xp*U_xp);
 
+%% Plots
+TibialTuberosityPos(ProxTib, CS , 1)
+hold on; plotArrow(Nxp,1.5,CS.Origin,30,1,'r')
+plotArrow(CS.Z,1,CS.Origin,30,1,'k')
+pl3t(Boundary_xp,'g-')
+
 %% Get the TTA orientation with Berger et al. method
 % Get the tibia contour at the proximal measurement
 % 5% under the sqrt of the area at the cut level
@@ -159,7 +170,9 @@ Curve_ttam = TriPlanIntersect(ProxTib,CS.Z,PtMiddleOfTT);
 
 GS_TTA = GS - ((GS'-PtMiddleOfTT)*CS.Z)*CS.Z;
 U_TTA = normalizeV(PtMiddleOfTT' - GS_TTA);
-theta_TTA = rad2deg(acos(CS.Y'*U_TTA));
+theta_TTA = rad2deg(acos(CS.Y'*U_TTA)) - PhysioTTAangle;
+theta_TTA = mod(180 + LegSide*theta_TTA , 180)
+
 
 % GS_MTTTA = GS - ((GS'-PtMedialThirdOfTT)*CS.Z)*CS.Z;
 % U_MTTTA = normalizeV(PtMedialThirdOfTT' - GS_TTA);
@@ -209,6 +222,7 @@ CDiaphysisStemTip_CT = PlanPolygonCentroid3D(BoundaryStemTip);
 Boundary_xp_inRxp = transpose(R_xp'*bsxfun(@minus,Boundary_xp,Oxp)');
 Boundary_xp_inRxp = Boundary_xp_inRxp(1:7:end-1,:); % Reduce Boundary Matriw weight
 CDiaphysisStemTip = transpose(R_xp'*(CDiaphysisStemTip_CT-Oxp)');
+PtMiddleOfTT_inRxp = transpose(R_xp'*(PtMiddleOfTT-Oxp)');
 
 CurvesProsthesisTP = TriPlanIntersect(Prosthesis,[10^-6; 10^-6; 1],2.5); %10^-6 to avoid numerical error
 
@@ -240,6 +254,7 @@ axis equal
 hold on
 pl3t(Boundary_xp_inRxp,'g-')
 plotDot([0,0,0],'r',0.5)
+plotDot(PtMiddleOfTT_inRxp,'g',0.5)
 
 
 %% Optimization of the placement of the prosthesis
@@ -278,6 +293,15 @@ pl3t(Boundary_ProsthesisTP,'r-')
 
 ProthOrig = Start_Point + x(1)*U_xp' + x(2)*V_xp';
 Rp = rot(Nxp,x(3));
+
+gamma = deg2rad(x(3));
+R = [cos(gamma) -sin(gamma) 0;sin(gamma) cos(gamma) 0; 0 0 1];
+ProsthContourTR_tmp = R*Boundary_ProsthesisTP';
+        % 2nd translate origin
+ProsthContourTR = bsxfun(@plus,ProsthContourTR_tmp',[x(1) x(2) 0]);
+
+pl3t(ProsthContourTR,'b-')
+
 
 
 % close all

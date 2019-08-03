@@ -11,7 +11,7 @@ history = [];
 
 f = @(x)AxialRotation(x , CS, R_xp, theta_TTA);
 fcon = @(x)CoverageConstraint(x, Boundary_xp_inRxp, Boundary_ProsthesisTP);
-options = optimoptions(@fmincon,'Algorithm','interior-point','MaxFunctionEvaluations',2500,'OutputFcn', @myoutput);
+options = optimoptions(@fmincon,'Algorithm','interior-point','MaxFunctionEvaluations',5000,'OutputFcn', @myoutput);
 [x,fval] = fmincon(f,x0,A,b,Aeq,beq,lb,ub,fcon,options);
 
     function stop = myoutput(x,optimvalues,state);
@@ -33,7 +33,7 @@ options = optimoptions(@fmincon,'Algorithm','interior-point','MaxFunctionEvaluat
         U_it = [cos(x(3)) ; sin(x(3)) ; 0];
         U_t = normalizeV(CS.Paxial*(R_xp*U_it));
         theta_it = rad2deg(acos(CS.Y'*U_t));
-        deltaTheta = (theta_TTA - 10) - theta_it; % Rotational error in degree 18° is the physiological value
+        deltaTheta = theta_TTA - theta_it; % Rotational error in degree 18° is the physiological value
         
         %% Compute objective function
         % Criterium 2 : Implant oriented towards the Tibial tuberosity
@@ -62,7 +62,7 @@ options = optimoptions(@fmincon,'Algorithm','interior-point','MaxFunctionEvaluat
         
         %% Compute cost function
         % Criterium : No overhang of the implant
-        C = max(exp(d+0.05)-1);  % Cost function , d+0.25 for penalty if the prosthesis is too close of the edges
+        C = mean(exp(d+0.25)-1);  % Cost function , d+0.25 for penalty if the prosthesis is too close of the edges
         
         Ceq = 0; 
         

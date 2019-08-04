@@ -36,7 +36,7 @@ j=0;
 % Variable to handle the distance between the end of the diaphysis to the
 % start of the epiphysis. Area where the Tibial Tuberosity is thought to be
 % located
-AltitudesFract = 0.1 : 0.1 : 0.7;
+AltitudesFract = -0.1 : 0.1 : 0.4;
 
 PtsMedThird = zeros(length(AltitudesFract),3);
 PtsMid = zeros(length(AltitudesFract),3);
@@ -148,8 +148,10 @@ for xAlt = AltitudesFract
     [~,IMedialPt] = max(PtsOnTT*VTT);
     [~,ILateralPt] = min(PtsOnTT*VTT);
     
+    % The iditified region is a bit too lateral so the result are shift
+    % medially a bit
     MedialThirdOfTT = 0.3*PtsOnTT(ILateralPt,:) + 0.7*PtsOnTT(IMedialPt,:);
-    MiddleOfTT = 1/2*PtsOnTT(ILateralPt,:) + 1/2*PtsOnTT(IMedialPt,:);
+    MiddleOfTT = 0.5*PtsOnTT(ILateralPt,:) + 0.5*PtsOnTT(IMedialPt,:);
     
     LineEndingOfTT = PtsOnTT(IMedialPt,:)-PtsOnTT(ILateralPt,:);
     VLineEndingOfTT = LineEndingOfTT'/norm(LineEndingOfTT);
@@ -195,9 +197,11 @@ end
 
 IDPtMedialThird = knnsearch(ProxTib.Points,mean(PtsMedThird));
 PtMedialThirdOfTT = ProxTib.Points(IDPtMedialThird,:);
+% PtMedialThirdOfTT = mean(PtsMedThird);
 
 IDPtMiddle = knnsearch(ProxTib.Points,mean(PtsMid));
 PtMiddleOfTT = ProxTib.Points(IDPtMiddle,:);
+% PtMiddleOfTT = mean(PtsMid);
 
 if plots >=1
     figure()
@@ -207,10 +211,13 @@ if plots >=1
     axis equal
     light('Position',CS.Origin' + 300*CS.Y + 200*CS.X,'Style','local')
     light('Position',CS.Origin' + 200*CS.Y - 200*CS.X,'Style','local')
+    light('Position',CS.Origin' - 200*CS.Y - 200*CS.X,'Style','local')
+    light('Position',CS.Origin' - 200*CS.Y + 200*CS.X,'Style','local')
     light('Position',CS.Origin' + 50*CS.Y + 50*CS.X - 500*CS.Z,'Style','local')
-    plotDot( PtsMedThird, 'r', 1.25 )
+    plotDot( PtsMedThird, 'r', 1 )
     plotDot( PtMedialThirdOfTT, 'g', 2.5 )
-    plotDot( PtsTT, 'b', 1.25 )
+    plotDot( PtMiddleOfTT, 'k', 2.5 )
+    plotDot( PtsTT, 'b', 1 )
     hold on
     grid off
     lighting gouraud

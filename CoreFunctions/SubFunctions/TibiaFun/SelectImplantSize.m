@@ -3,7 +3,7 @@ function [ Prosthesis, StemCenter, Thickness, size ] = SelectImplantSize(CWD, PC
 %
 
 % Minimal offset in % of characteritqiue length between bone and implant
-bone_margin = 2.5;
+bone_margin = 6;
 bone_margin = bone_margin/100;
 
 switch Prosth_Type

@@ -35,7 +35,7 @@ if nargin == 4
     beta = 7;
 end
 Zoffset_tp = 10; % offset of the tibial plateau plan to calculate dimension
-ResectionOffset = 2.5 ;
+ResectionOffset = 7.5 ;
 CmtThickness = 0;
 PhysioTTAangle = 15;
 
@@ -206,17 +206,26 @@ switch implantType
     case {'Nexgen','nexgen',1}
         prosth_type = 1;
         [ Prosthesis0, StemTip, Thickness , ProstName ] = ...
-        SelectImplantSize(RootDir, ML_Width_xp, AP_Width_xp, 1, LongStem );
+            SelectImplantSize(RootDir, ML_Width_xp, AP_Width_xp, prosth_type, LongStem );
         
-%         TI_speTransfo = [0 LegSide 0 ; 1 0 0; 0 0 -1]; % [0 LegSide 0 ; LegSide 0 0; 0 0 -1]
+        %         TI_speTransfo = [0 LegSide 0 ; 1 0 0; 0 0 -1]; % [0 LegSide 0 ; LegSide 0 0; 0 0 -1]
         TI_speTransfo = [0 LegSide 0 ; LegSide 0 0; 0 0 -1] ;
     case {'Persona','persona',3}
         prosth_type = 3;
         [ Prosthesis0, StemTip, Thickness , ProstName ] = ...
-        SelectImplantSize(RootDir, ML_Width_xp, AP_Width_xp, 3, LongStem, LegSideName );
-
+            SelectImplantSize(RootDir, ML_Width_xp, AP_Width_xp, prosth_type, LongStem, LegSideName );
+        
         TI_speTransfo = [0 -LegSide 0 ; LegSide 0 0; 0 0 1];
-
+        
+        
+    case {'GC6','GrandChallenge','GC',4}
+        prosth_type = 4;
+        [ Prosthesis0, StemTip, Thickness , ProstName ] = ...
+            SelectImplantSize(RootDir, ML_Width_xp, AP_Width_xp, prosth_type, LongStem, LegSideName );
+        
+        TI_speTransfo = [LegSide 0 0 ; 0 LegSide 0 ; 0 0 1];
+        
+        
     otherwise
         warning('Type of implants not implemented wet')
 end
@@ -315,6 +324,13 @@ pl3t(Boundary_ProsthesisTP,'r-')
 ProthOrig = Start_Point + x(1)*U_xp' + x(2)*V_xp';
 Rp = rot(Nxp,x(3));
 
+% Get Delta Theta
+U_it = [cos(deg2rad(x(3))) ; sin(deg2rad(x(3))) ; 0];
+U_t = normalizeV(CS.Paxial*(R_xp*U_it));
+theta_it = rad2deg(acos(CS.Y'*U_t));
+deltaTheta = theta_TTA - theta_it; % Rotational error in degree 18° is the physiological value
+
+%
 gamma = deg2rad(x(3));
 R = [cos(gamma) -sin(gamma) 0;sin(gamma) cos(gamma) 0; 0 0 1];
 ProsthContourTR_tmp = R*Boundary_ProsthesisTP';
@@ -323,36 +339,9 @@ ProsthContourTR_optim = bsxfun(@plus,ProsthContourTR_tmp',[x(1) x(2) 0]);
 
 pl3t(ProsthContourTR_optim,'b-')
 
-%% Plot 2D placement with TTA 
-% close all
-% figure()
-% % Plot Tibia border at the cut plan
-% pl3t(Boundary_xp_inRxp,'g-')
-% hold on;
-% % Plot Implant in place 
-% gamma = deg2rad(x(3));
-% R = [cos(gamma) -sin(gamma) 0;sin(gamma) cos(gamma) 0; 0 0 1];
-% 
-% % Tibial Tray Contour
-% ProsthContourTR_tmp = R*Boundary_ProsthesisTP';
-%         % 2nd translate origin
-% ProsthContourTR_optim = bsxfun(@plus,ProsthContourTR_tmp',[x(1) x(2) 0]);
-% pl3t(ProsthContourTR_optim,'r-')
-% 
-% 
-% % Above Tibial tray 
-% 
-% ProsthesisShape2 = TriPlanIntersect(Prosthesis,[10^-6; 10^-6; 1],-0.15);
-% 
-% for i=1:length(ProsthesisShape2)
-%     ProsthesisShape2(i).Pts = R*ProsthesisShape2(i).Pts';
-%     ProsthesisShape2(i).Pts = bsxfun(@plus,ProsthesisShape2(i).Pts',[x(1) x(2) 0]);
-%     pl3t(ProsthesisShape2(i).Pts,'r-')
-% end
-
 %% Plot 2D placement with TTA in Rt
 % Initial State
-close all
+% close all
 PlotPosOptim2D( x, Prosthesis, Boundary_xp, ProxTib, GS, GS_TTA,...
     PtMiddleOfTT, Oxp, PtMedialThirdOfTT, R_xp, CS, history(1,:) )
 figHandles = findobj('Type', 'figure');
@@ -384,7 +373,6 @@ PtsProsth0(:,4) = ones(length(PtsProsth0),1);
 T = zeros(4,4); T(1:3,1:3) = Rp*R_xp*TI_speTransfo; %[0 LegSide 0 ; 1 0 0; 0 0 -1]
 T(:,4)=[ProthOrig';1];
 
-
 %% Plot Deformation with implanted Tibial Implant
 PtsProsthEnd = transpose(T*PtsProsth0');
 PtsProsthEnd(:,4)=[];
@@ -393,9 +381,8 @@ ProsthesisEnd = triangulation(Prosthesis0.ConnectivityList,PtsProsthEnd);
 
 close all;
 % 
-% PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, R_xp, CS, PtMiddleOfTT, Boundary_xp, TI_speTransfo)
+PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, R_xp, CS, PtMiddleOfTT, Boundary_xp, TI_speTransfo)
 % PlotTibiaDeformation(TrObjects, ProsthesisEnd, PtMiddleOfTT, CS )
-
 
 
 %%

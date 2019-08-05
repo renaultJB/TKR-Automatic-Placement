@@ -25,6 +25,10 @@ switch Prosth_Type
             56.5	50.2	79];
         Widths = [Dims(:,3), 0.55*Dims(:,2) + 0.55*Dims(:,1)] ;
         Thickness = 4.5;      
+    case 4
+        Type = {'Size85'};
+        Widths = [80 50;];
+        Thickness = 8.39;
 end
 
 % Choose inferior size if it's too large MedioLaterally
@@ -63,7 +67,7 @@ end
 
 size = char(Type(k));
 
-if Prosth_Type ==3
+if Prosth_Type ==3 || Prosth_Type == 4
     size = strcat(size,'_',LegSideName);
 end
 
@@ -98,7 +102,7 @@ switch Prosth_Type
         Zmax = Prosthesis.Points(Izmax,3);
         StemCenter = mean(Prosthesis.Points(Prosthesis.Points(:,3)>Zmax-ht,:))+...
             [0 0 ht/2];
-    case 2
+    case {2,4}
         [~,Izmin] = min(Prosthesis.Points(:,3));
         Zmin = Prosthesis.Points(Izmin,3);
         StemCenter = mean(Prosthesis.Points(Prosthesis.Points(:,3)<Zmin+ht,:))+...

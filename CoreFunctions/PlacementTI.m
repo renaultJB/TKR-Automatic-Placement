@@ -1,4 +1,4 @@
-function [ Tstring , T_str_anat , ML_Width_xp , AP_Width_xp , ProstName] = PlacementTI( SubjectCode, alpha , implantType , LongStem )
+function [ Tstring , T_str_anat , ML_Width_xp , AP_Width_xp , ProstName] = PlacementTI( SubjectCode, alpha , implantType , LongStem, beta )
 %PlacementTI : This function place a tibial implant onto a tibia this works
 %in pair with a python sript
 %
@@ -31,9 +31,11 @@ function [ Tstring , T_str_anat , ML_Width_xp , AP_Width_xp , ProstName] = Place
 
 %% Parameters
 % Prescribed Posterior slope of the implant relative to mechanical axis
-beta = 6;
+if nargin == 4
+    beta = 7;
+end
 Zoffset_tp = 10; % offset of the tibial plateau plan to calculate dimension
-ResectionOffset = 3 ;
+ResectionOffset = 2.5 ;
 CmtThickness = 0;
 PhysioTTAangle = 15;
 
@@ -349,99 +351,30 @@ pl3t(ProsthContourTR_optim,'b-')
 % end
 
 %% Plot 2D placement with TTA in Rt
+% Initial State
 close all
 PlotPosOptim2D( x, Prosthesis, Boundary_xp, ProxTib, GS, GS_TTA,...
-    PtMiddleOfTT, Oxp, PtMedialThirdOfTT, R_xp, CS, history )
+    PtMiddleOfTT, Oxp, PtMedialThirdOfTT, R_xp, CS, history(1,:) )
+figHandles = findobj('Type', 'figure');
+% figName = ['Figs_' SubjectCode '_alpha' num2str(alpha) '.fig'];
+imgName = ['Figs_' SubjectCode '_alpha' num2str(alpha) '_beta' num2str(beta) '_init.png'];
+saveas(gcf,imgName)
+% savefig(figHandles,figName,'compact');
+save(TmpFileName,'ProxTib','DistTib','CS','TrObjects','PtMiddleOfTT','LegSideName')
 
-figure()
-% Plot Tibia border at the cut plan
 
-Boundary_xp_inRt = CS.V'*bsxfun(@minus,Boundary_xp,CS.Origin)';
-pl3t(Boundary_xp_inRt,'g-')
-hold on;
-% Plot Implant in place 
-gamma = deg2rad(x(3));
-R = [cos(gamma) -sin(gamma) 0;sin(gamma) cos(gamma) 0; 0 0 1];
+% Post Optimiasation
+close all
+PlotPosOptim2D( x, Prosthesis, Boundary_xp, ProxTib, GS, GS_TTA,...
+    PtMiddleOfTT, Oxp, PtMedialThirdOfTT, R_xp, CS,  history(end,:)  )
 
-% Tibial Tray Contour
-ProsthContourTR_tmp = R*Boundary_ProsthesisTP';
-ProsthContourTR_optim = bsxfun(@plus,ProsthContourTR_tmp',[x(1) x(2) 0]);
-ProsthContourTR_optim = R_xp*ProsthContourTR_optim';
-ProsthContourTR_optim = bsxfun(@plus,ProsthContourTR_optim',Oxp);
-IT_Contour_optim_inRt = CS.V'*bsxfun(@minus,ProsthContourTR_optim,CS.Origin)';
 
-pl3t(IT_Contour_optim_inRt,'r-')
-
-O_it_inRt = CS.V'*(Oxp'+R_xp*[x(1) x(2) 0]'-CS.Origin');
-
-% Above Tibial tray 
-
-for dZ = [ 0.15, 0.40, 0.80, 1.50, 2.5]
-    ProsthesisShape2 = TriPlanIntersect(Prosthesis,[10^-6; 10^-6; 1],-dZ);
-    
-    for i=1:length(ProsthesisShape2)
-        ProsthesisShape2(i).Pts = R*ProsthesisShape2(i).Pts';
-        ProsthesisShape2(i).Pts = bsxfun(@plus,ProsthesisShape2(i).Pts',[x(1) x(2) 0]);
-        
-        ProsthesisShape2(i).Pts = R_xp*ProsthesisShape2(i).Pts';
-        ProsthesisShape2(i).Pts = bsxfun(@plus,ProsthesisShape2(i).Pts',Oxp);
-        ProsthesisShape2(i).Pts = CS.V'*bsxfun(@minus,ProsthesisShape2(i).Pts,CS.Origin)';
-        
-        pl3t(ProsthesisShape2(i).Pts,'r-')
-    end
-end
-
-Oxp_inRt = CS.V'*(Oxp-CS.Origin)';
-
-Nxp_inRt = CS.V'*Nxp;
-plotArrow(Nxp_inRt,0.25,Oxp_inRt,40,1,'r')
-plotArrow([0;0;1],0.25,Oxp_inRt,40,1,'k')
-
-% Plot countour at TTA
-GS_inRt = CS.V'*(GS'-CS.Origin)';
-GS_TTA_inRt = CS.V'*(GS_TTA'-CS.Origin)';
-PtMiddleOfTT_inRt = CS.V'*(PtMiddleOfTT-CS.Origin)';
-PtMedialThirdOfTT_inRt = CS.V'*(PtMedialThirdOfTT-CS.Origin)';
-
-Curve_ttam = Curve_ttam(1).Pts;
-Curve_ttam_inRt = CS.V'*bsxfun(@minus,Curve_ttam,CS.Origin)';
-% pl3t(Curve_ttam_inRt,'b-')
-plotDot(PtMiddleOfTT_inRt','b',1)
-plotDot(PtMedialThirdOfTT_inRt','g',1)
-pl3t(GS_inRt,'ko')
-pl3t(GS_TTA_inRt,'ko')
-% Keep only exterior part of the section at the TTA level
-
-d = p_poly_dist(Curve_ttam_inRt(1,:), Curve_ttam_inRt(2,:),...
-    Boundary_xp_inRt(1,:), Boundary_xp_inRt(2,:));
-pl3t(Curve_ttam_inRt,'b--')
-pl3t(Curve_ttam_inRt(:,d>0),'b.')
-
-% Line of GS to TTA
-
-U_TTA_inRt = normalizeV(PtMiddleOfTT_inRt-GS_TTA_inRt);
-U_MTTTA_inRt = normalizeV(PtMedialThirdOfTT_inRt-GS_TTA_inRt);
-
-LineTTA_inRT = [GS_TTA_inRt,PtMiddleOfTT_inRt];
-LineMTTTA_inRT = [GS_TTA_inRt,PtMedialThirdOfTT_inRt];
-
-pl3t(LineMTTTA_inRT,'k-')
-pl3t(LineMTTTA_inRT,'k-')
-
-X_it = CS.V'*R_xp*R(:,1);
-X_it = sign(X_it'*U_TTA_inRt)*X_it;
-
-X_it_proj = normalizeV([X_it(1:2);0]);
-
-Line_it = [O_it_inRt,O_it_inRt+40*X_it_proj];
-Line_it_GS = [GS_inRt,GS_inRt+40*X_it_proj];
-pl3t(Line_it,'r--')
-pl3t(Line_it_GS,'r-')
-
-% close all
-% 
-% [ coverage, malRotation ] = OptimOutput( x, Boundary_xp_inRxp, Boundary_ProsthesisTP, TTproj );
-% 
+figHandles = findobj('Type', 'figure');
+figName = ['Figs_' SubjectCode '_alpha' num2str(alpha) '_beta' num2str(beta) '.fig'];
+imgName = ['Figs_' SubjectCode '_alpha' num2str(alpha) '_beta' num2str(beta) '.png'];
+saveas(gcf,imgName)
+savefig(figHandles,figName,'compact');
+save(TmpFileName,'ProxTib','DistTib','CS','TrObjects','PtMiddleOfTT','LegSideName')
 
 %% Placement Matrix To FreeCAD
 PtsProsth0 = Prosthesis0.Points;
@@ -459,42 +392,43 @@ PtsProsthEnd(:,4)=[];
 ProsthesisEnd = triangulation(Prosthesis0.ConnectivityList,PtsProsthEnd);
 
 close all;
-PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, Nxp, R_xp, LegSide, d_xp, CS, PtMiddleOfTT, Boundary_xp, TT_on_xp, TI_speTransfo )
-PlotTibiaDeformation(TrObjects, ProsthesisEnd, PtMiddleOfTT, CS )
+% 
+% PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, R_xp, CS, PtMiddleOfTT, Boundary_xp, TI_speTransfo)
+% PlotTibiaDeformation(TrObjects, ProsthesisEnd, PtMiddleOfTT, CS )
 
 
 
 %%
 
-
-ProsthesisShape2 = TriPlanIntersect(Prosthesis,[10^-6; 10^-6; 1],-0.15);
-[ coverage, malRotation ] = OptimOutput( x, Boundary_xp_inRxp, Boundary_ProsthesisTP, TTproj, ProsthesisShape2, LegSide );
+% 
+% ProsthesisShape2 = TriPlanIntersect(Prosthesis,[10^-6; 10^-6; 1],-0.15);
+% [ coverage, malRotation ] = OptimOutput( x, Boundary_xp_inRxp, Boundary_ProsthesisTP, TTproj, ProsthesisShape2, LegSide );
 
 %% Write Results
-figHandles = findobj('Type', 'figure');
-figName = ['Figs_' SubjectCode '_alpha' num2str(alpha) '.fig'];
-imgName = ['Figs_' SubjectCode '_alpha' num2str(alpha) '.png'];
-saveas(gcf,imgName)
-savefig(figHandles,figName,'compact');
-save(TmpFileName,'ProxTib','DistTib','CS','TrObjects','PtMiddleOfTT','LegSideName') 
+% figHandles = findobj('Type', 'figure');
+% figName = ['Figs_' SubjectCode '_alpha' num2str(alpha) '.fig'];
+% imgName = ['Figs_' SubjectCode '_alpha' num2str(alpha) '.png'];
+% saveas(gcf,imgName)
+% savefig(figHandles,figName,'compact');
+% save(TmpFileName,'ProxTib','DistTib','CS','TrObjects','PtMiddleOfTT','LegSideName') 
 
-outPut(end+1).Subject = SubjectCode;
-outPut(end).Implant = ProstName;
-outPut(end).Coverage = coverage;
-outPut(end).OrientationAngle = malRotation;
-outPut(end).figName = figName;
-if KA
-    outPut(end).alignmentType = 'KA';
-else
-    outPut(end).alignmentType = 'MA';
-end
-outPut(end).angleVV = -Angle_Varus;
-outPut(end).angleTS = Angle_Slope;
-outPut(end).angleAlignF = alpha;
-outPut(end).angleAlignAP = beta;
-
-savePath = [pwd '\Output.mat'];
-save(savePath,'outPut')
+% outPut(end+1).Subject = SubjectCode;
+% outPut(end).Implant = ProstName;
+% outPut(end).Coverage = coverage;
+% outPut(end).OrientationAngle = malRotation;
+% outPut(end).figName = figName;
+% if KA
+%     outPut(end).alignmentType = 'KA';
+% else
+%     outPut(end).alignmentType = 'MA';
+% end
+% outPut(end).angleVV = -Angle_Varus;
+% outPut(end).angleTS = Angle_Slope;
+% outPut(end).angleAlignF = alpha;
+% outPut(end).angleAlignAP = beta;
+% 
+% savePath = [pwd '\Output.mat'];
+% save(savePath,'outPut')
 
 
 % figure()

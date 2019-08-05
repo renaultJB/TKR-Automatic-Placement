@@ -42,6 +42,9 @@ options = optimoptions(@fmincon,'Algorithm','interior-point','MaxFunctionEvaluat
         Ceq = 0;
     end
 
+
+
+
     function [ C,Ceq ] = CoverageConstraint(x, Boundary_xp_inRxp, Boundary_ProsthesisTP)
         
         x(3) = x(3)*pi/180 ; % Just to have x(1),x(2),x(3) with the same order of magnitude
@@ -49,39 +52,55 @@ options = optimoptions(@fmincon,'Algorithm','interior-point','MaxFunctionEvaluat
         Boundary_ProsthesisTP(:,3) = [];
         ProsthOrig = [x(1) x(2)];
         
-        % Smooth high curbature in the cut plan R=7.5mm
+        % Smooth high curvature in the cut plan R around 5 to 8 mm
+        SmoothingRadius = 0.1*range(Boundary_xp_inRxp(:,2));
         Boundary_xp_inRxp2 = [Boundary_xp_inRxp;...
-            0.85*Boundary_xp_inRxp;...
-            0.55*Boundary_xp_inRxp;...
+            0.8*Boundary_xp_inRxp;...
+            0.6*Boundary_xp_inRxp;...
+            0.4*Boundary_xp_inRxp;...
             0.2*Boundary_xp_inRxp];
 
-        shp = alphaShape(Boundary_xp_inRxp2(:,1), Boundary_xp_inRxp2(:,2),7.5,'HoleThreshold',10^10);
+        shp = alphaShape(Boundary_xp_inRxp2(:,1), Boundary_xp_inRxp2(:,2),...
+                         SmoothingRadius,'HoleThreshold',10^5);
         BF = boundaryFacets(shp);
         ID=BF(:,1);
         
         %% Displace implant
         % 1st rotation around original axis
         R = [cos(x(3)) -sin(x(3));sin(x(3)) cos(x(3))];
-
+        
         ProsthContourTR_tmp = R*Boundary_ProsthesisTP';
         % 2nd translate origin
         ProsthContourTR = bsxfun(@plus,ProsthContourTR_tmp',ProsthOrig);
         
         %% Compute placement criteria
-        % Overhang   
+        % Overhang
         d = p_poly_dist(ProsthContourTR(:,1), ProsthContourTR(:,2), Boundary_xp_inRxp2(ID,1), Boundary_xp_inRxp2(ID,2));
         
-%         figure(100)
-%         plot( Boundary_xp_inRxp2(ID,1), Boundary_xp_inRxp2(ID,2),'k*-')
-%         axis equal
-%         view([0,90])
-       
+        %         figure(100)
+        %         plot( Boundary_xp_inRxp2(ID,1), Boundary_xp_inRxp2(ID,2),'k*-')
+        %         axis equal
+        %         view([0,90])
+        
         
         %% Compute cost function
         % Criterium : No overhang of the implant
         C = max(exp(d+0.25)-1);  % Cost function , d+0.25 for penalty if the prosthesis is too close of the edges
-%         C = max(d+0.25);
-        Ceq = 0; 
+        %         C = max(d+0.25);
+%         % Align medioLateral, good repartition of implant distance to the
+%         % medial and lateral border of the tibia
+%         delta_Med = max(Boundary_xp_inRxp(:,2))-max(ProsthContourTR(:,2));
+%         delta_Lat = min(ProsthContourTR(:,2))-min(Boundary_xp_inRxp(:,2));
+%         RatioML = abs(delta_Med/(delta_Med+delta_Lat)-1/2)
+%         
+%         % Could also use " 'ConstraintTolerance',1/6 " in option
+%         if RatioML<1/6
+%             Ceq = 0;
+%         else
+%             Ceq = RatioML;
+%         end
+%         
+        Ceq = [];
         
         
     end

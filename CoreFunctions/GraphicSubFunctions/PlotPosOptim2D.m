@@ -2,7 +2,10 @@ function PlotPosOptim2D( x, Prosthesis, Boundary_xp, ProxTib, GS, GS_TTA,...
     PtMiddleOfTT, Oxp, PtMedialThirdOfTT, R_xp, CS, history )
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
+size(history,1)
 
+% Switch Video On/Off
+Video = 0;
 
 % mean(ProxTibCuttedCS.Points)
 
@@ -10,8 +13,8 @@ if nargin < 12
     history = x;
 end
 
-if size(history,1) > 5
-    v = VideoWriter('newfile.mp4','MPEG-4');
+if size(history,1) > 5 && Video
+    v = VideoWriter('Optim2D.mp4','MPEG-4');
     v.FrameRate = 8;
     open(v)
 end
@@ -63,7 +66,7 @@ CurvesProsthesisTP.Pts = bsxfun(@plus,CurvesProsthesisTP.Pts, [0,0,2.5]);
 Boundary_ProsthesisTP = [CurvesProsthesisTP.Pts(1:6:end-1,:) ; CurvesProsthesisTP.Pts(end,:)];
 
 %%
-figure(1)
+% figure(1)
 figure('units','normalized','outerposition',[0 0 1 1])
 view([0,90])
 grid off
@@ -211,13 +214,13 @@ for j = 1 : size(history,1)
 
     view([0,90])
     axis off
-    if size(history,1) > 5
+    if size(history,1) > 5 && Video
         writeVideo(v,getframe(gcf));
     end
     
 end
 
-if size(history,1) > 5
+if size(history,1) > 5 && Video
     for i=1:round(length(history)/5)
         writeVideo(v,getframe(gcf));
     end
@@ -225,6 +228,7 @@ if size(history,1) > 5
     close(v)
     
 end
+
 
 
 end

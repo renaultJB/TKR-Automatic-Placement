@@ -31,10 +31,10 @@ tic
 
 %% Parameters
 % Prescribed Posterior slope of the implant relative to mechanical axis
-beta0 = 5;
-Zoffset_tp = 7; % offset of the tibial plateau plan to calculate dimension
-ResectionOffset = 3.5 ;
-CmtThickness = 1;
+beta0 = 5.0;
+Zoffset_tp = 7.0; % offset of the tibial plateau plan to calculate dimension
+ResectionOffset = 4.0 ;
+CmtThickness = 0.0;
 
 %% Files and folders handling
 addpath(genpath(strcat(pwd,'\SubFunctions')))
@@ -237,6 +237,23 @@ PlotTibiaDeformation(TrObjects, ProsthesisEnd, PtMedialThirdOfTT, CS )
 ProsthesisShape2 = TriPlanIntersect(Prosthesis,[10^-6; 10^-6; 1],-0.15);
 [ coverage, malRotation ] = OptimOutput( x, Boundary_xp_inRxp, Boundary_ProsthesisTP, TTproj, ProsthesisShape2, LegSide );
 
+%% Get interesting points and data to export
+% Get Pts on Stem Tip planar surface
+PtOnStemTip = getPtOnStemTip(ProsthesisEnd,Nxp);
+
+% Normal at stem tip
+Nst = Rp*R_xp*[0 LegSide 0 ; LegSide 0 0; 0 0 -1]*[0; sind(4.5); -cosd(4.5)];
+
+%Nxp
+%Oxp
+%PtMedialThirdOfTT
+% PtSemiMembranous %
+% PtBiceps %
+% PtSartorius % Very low forces
+% PtSoleus % Insertion on fibula head and diaphysis
+
+
+
 %% Write Results
 figHandles = findobj('Type', 'figure');
 figName = ['Figs_' SubjectCode '_alpha' num2str(alpha) '.fig'];
@@ -263,39 +280,52 @@ outPut(end).angleAlignAP = beta0;
 savePath = [pwd '\Output.mat'];
 save(savePath,'outPut')
 
+% 
+[ CtrltyScore, Tabl ] = CentralityScore(ProxTib, Prosthesis, ProsthesisEnd, StemTip, LegSide);
+writetable(Tabl,['Centrality_' SubjectCode '_alpha' num2str(alpha) '.txt'])
+% 
 
-% 
-% 
-% [ CtrltyScore, Tabl ] = CentralityScore(ProxTib, Prosthesis, ProsthesisEnd, StemTip, LegSide);
-% writetable(Tabl,['Centrality_' SubjectCode '_alpha' num2str(alpha) '.txt'])
-% 
-% 
-% 
-% PlotTibiaDeformation(TrObjects, ProsthesisEnd, PtMedialThirdOfTT, CS )
-% 
-% fID3=fopen(['Output_' SubjectCode '_alpha' num2str(alpha) '.txt'],'w');
-% fprintf(fID3,'name= "%s" \r\n', SubjectCode );
-% fprintf(fID3,'ZALT= \r\n %4.8f \r\n', StemTip_CT(3)+16 );
-% % fprintf(fID3,'Axe Diaphise : \r\n %4.8f %4.8f %4.8f  \r\n', Zanat);
-% fprintf(fID3,'Axe Méca X : \r\n %4.8f %4.8f %4.8f  \r\n', CS.X);
-% fprintf(fID3,'Axe Méca Y : \r\n %4.8f %4.8f %4.8f  \r\n', CS.Y);
-% fprintf(fID3,'Axe Méca Z : \r\n %4.8f %4.8f %4.8f  \r\n', CS.Z);
-% fprintf(fID3,'Normal plateau tibial : \r\n %4.8f %4.8f %4.8f  \r\n', Nxp);
-% fprintf(fID3,'Angle Diaphise/Plateau tibial plan Frontal (angle varus) : \r\n %2.2f   \r\n', Angle_Varus);
-% fprintf(fID3,'Angle Diaphise/Plateau tibial plan Sagittal (pente tibial) : \r\n %2.2f   \r\n', Angle_Slope);
-% 
-% fprintf(fID3,'Centrality Scores CV : \r\n %2.2f   \r\n', CtrltyScore.CV);
-% fprintf(fID3,'Centrality Scores Min/Max : \r\n %2.2f   \r\n', CtrltyScore.MinMax);
-% fprintf(fID3,'Centrality Scores Min/Mean : \r\n %2.2f   \r\n', CtrltyScore.MinMean);
-% 
-% fprintf(fID3,'Partie Python pour freeCAD \r\n \r\n');
-% fprintf(fID3,'obj0=App.ActiveDocument.ActiveObject \r\n');
-% fprintf(fID3,'obj = FreeCAD.getDocument("Unnamed").getObject("Part__Feature") \r\n');
-% formatSpec2 = '(%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f)\r\n';
-% Tt=T';
-% fprintf(fID3,'newplace=FreeCAD.Matrix');
-% fprintf(fID3,formatSpec2,Tt(:));
-% fclose(fID3);
+%% Data For Dictionnary Creation
+fID1=fopen(['Dict_' SubjectCode '_alpha' num2str(alpha) '.txt'],'w');
+formatSpec1 = 'T, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f\r\n';
+Tt=T';
+fprintf(fID1,formatSpec1,Tt(:));
+fprintf(fID1,'ZALT, %4.8f\r\n', StemTip_CT(3)+16 );
+fprintf(fID1,'UDiaph, %4.8f, %4.8f, %4.8f\r\n', Zanat);
+fprintf(fID1,'Xmech, %4.8f, %4.8f, %4.8f,\r\n', CS.X);
+fprintf(fID1,'Ymech, %4.8f, %4.8f, %4.8f\r\n', CS.Y);
+fprintf(fID1,'Zmech, %4.8f, %4.8f, %4.8f\r\n', CS.Z);
+fprintf(fID1,'Nxp, %4.8f, %4.8f, %4.8f', Nxp);
+fprintf(fID1,'Pt_xp, %4.8f, %4.8f, %4.8f', Oxp);
+fprintf(fID1,'Pt_TT, %4.8f, %4.8f, %4.8f', PtMedialThirdOfTT);
+fprintf(fID1,'Nst, %4.8f, %4.8f, %4.8f', Nst);
+fprintf(fID1,'Pt_StemTip, %4.8f, %4.8f, %4.8f', PtOnStemTip);
+fclose(fID1);
+
+%% Data for FreeCAD and general data
+fID3=fopen(['Output_' SubjectCode '_alpha' num2str(alpha) '.txt'],'w');
+fprintf(fID3,'name= "%s" \r\n', SubjectCode );
+fprintf(fID3,'ZALT= \r\n %4.8f \r\n', StemTip_CT(3)+16 );
+fprintf(fID3,'Axe Diaphise : \r\n %4.8f %4.8f %4.8f  \r\n', Zanat);
+fprintf(fID3,'Axe Méca X : \r\n %4.8f %4.8f %4.8f  \r\n', CS.X);
+fprintf(fID3,'Axe Méca Y : \r\n %4.8f %4.8f %4.8f  \r\n', CS.Y);
+fprintf(fID3,'Axe Méca Z : \r\n %4.8f %4.8f %4.8f  \r\n', CS.Z);
+fprintf(fID3,'Normal plateau tibial : \r\n %4.8f %4.8f %4.8f  \r\n', Nxp);
+fprintf(fID3,'Angle Diaphise/Plateau tibial plan Frontal (angle varus) : \r\n %2.2f   \r\n', Angle_Varus);
+fprintf(fID3,'Angle Diaphise/Plateau tibial plan Sagittal (pente tibial) : \r\n %2.2f   \r\n', Angle_Slope);
+
+fprintf(fID3,'Centrality Scores CV : \r\n %2.2f   \r\n', CtrltyScore.CV);
+fprintf(fID3,'Centrality Scores Min/Max : \r\n %2.2f   \r\n', CtrltyScore.MinMax);
+fprintf(fID3,'Centrality Scores Min/Mean : \r\n %2.2f   \r\n', CtrltyScore.MinMean);
+
+fprintf(fID3,'Partie Python pour freeCAD \r\n \r\n');
+fprintf(fID3,'obj0=App.ActiveDocument.ActiveObject \r\n');
+fprintf(fID3,'obj = FreeCAD.getDocument("Unnamed").getObject("Part__Feature") \r\n');
+formatSpec2 = '(%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f,%4.8f)\r\n';
+Tt=T';
+fprintf(fID3,'newplace=FreeCAD.Matrix');
+fprintf(fID3,formatSpec2,Tt(:));
+fclose(fID3);
 
 Tstring =sprintf(strcat('newplace=FreeCAD.Matrix',formatSpec2),T(:));
 

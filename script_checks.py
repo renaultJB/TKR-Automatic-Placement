@@ -31,13 +31,16 @@ def matlab_module_exists(module_name):
         print('Matlab Engine Module for python already installed and imported')
 
 
-def find_ProsthFiles(directory,Pname,Ptype):
+def find_ProsthFiles(directory,Pname,Ptype,CmtOnly=False):
     import os
     Ptype = int(Ptype)
     os.chdir(directory)
     files_list = []
     prosthType = 'Prosthesis'+str(Ptype)
-    filesPref = ['C_','Cut_','Implant'+str(Ptype)]
+    if CmtOnly :
+        filesPref = ['Cut_','Implant'+str(Ptype)]
+    else :
+        filesPref = ['C_','Cut_','Implant'+str(Ptype)]
     for path, subdirs, files in os.walk(directory):
         for name in files:
             files_list.append(os.path.join(path, name))

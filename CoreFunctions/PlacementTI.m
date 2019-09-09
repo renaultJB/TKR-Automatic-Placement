@@ -450,6 +450,7 @@ fprintf(fID3,'newplace=FreeCAD.Matrix');
 fprintf(fID3,formatSpec2,Tt(:));
 fclose(fID3);
 
+Tstring =sprintf(strcat('newplace=FreeCAD.Matrix',formatSpec2),Tt(:));
 
 Tanat=zeros(4,4);Tanat(1:3,1:3) = CS.V*[0 LegSide 0 ; LegSide 0 0; 0 0 -1];
 Tanat(:,4)=[CS.Origin';1];

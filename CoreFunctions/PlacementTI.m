@@ -1,4 +1,4 @@
-function [ Tstring , T_str_anat , ML_Width_xp , AP_Width_xp , ProstName] = PlacementTI( SubjectCode, alpha , implantType , LongStem, beta )
+function [ Tstring , T_str_anat , ML_Width_xp , AP_Width_xp , ProstName, alpha] = PlacementTI( SubjectCode, alpha , implantType , LongStem, beta )
 %PlacementTI : This function place a tibial implant onto a tibia this works
 %in pair with a python sript
 %
@@ -35,9 +35,9 @@ if nargin == 4
     beta = 7;
 end
 Zoffset_tp = 10; % offset of the tibial plateau plan to calculate dimension
-ResectionOffset = 5. ;
+ResectionOffset = 2.5 ;
 CmtThickness = 0.;
-PhysioTTAangle = 15;
+PhysioTTAangle = 12.5;
 
 %% Files and folders handling
 addpath(genpath(strcat(pwd,'\SubFunctions')))
@@ -450,12 +450,12 @@ fprintf(fID3,'newplace=FreeCAD.Matrix');
 fprintf(fID3,formatSpec2,Tt(:));
 fclose(fID3);
 
-Tstring =sprintf(strcat('newplace=FreeCAD.Matrix',formatSpec2),T(:));
 
 Tanat=zeros(4,4);Tanat(1:3,1:3) = CS.V*[0 LegSide 0 ; LegSide 0 0; 0 0 -1];
 Tanat(:,4)=[CS.Origin';1];
 Tanat = Tanat';
 T_str_anat = sprintf(strcat('newplaceAnat=FreeCAD.Matrix',formatSpec2),Tanat(:));
+
 
 %% Write Results
 % figHandles = findobj('Type', 'figure');
@@ -492,6 +492,9 @@ T_str_anat = sprintf(strcat('newplaceAnat=FreeCAD.Matrix',formatSpec2),Tanat(:))
 % 
 % 
 
+%% Close all
+
+close all
 
 end
 

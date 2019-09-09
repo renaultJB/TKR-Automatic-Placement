@@ -4,6 +4,7 @@ from script_checks import matlab_module_exists,find_ProsthFiles
 matlab_module_exists('matlab.engine')
 import matlab.engine
 
+cwd = os.getcwd()
 
 #### Paramaters ####
 SubjectCode = str.upper(raw_input("Enter Subject Code (eg : AM_R) : "))
@@ -19,7 +20,19 @@ else :
 # LongStem = input("Use of long Stem ? (1 for yes) : ")
 LongStem = 0
 
-MeshExist = input("Meshes already created ? (1 for Yes): ")
+if os.path.isfile(cwd+"\\Output\\"+SubjectCode+"\\Tibia_" + SubjectCode + ".msh") :
+    print('Mesh Files Found')
+    MeshExist = 1
+elif os.path.isfile(cwd+"\\"+"Tibia_" + SubjectCode + ".msh") :
+    os.rename(cwd+"\\"+"Tibia_" + SubjectCode + ".msh",cwd+"\\Output\\"+SubjectCode+"\\Tibia_" + SubjectCode + ".msh")
+    os.rename(cwd+"\\"+"DistTibia_" + SubjectCode + ".msh",cwd+"\\Output\\"+SubjectCode+"\\DistTibia_" + SubjectCode + ".msh")
+    print('Mesh Files Found and displaced')
+    MeshExist = 1
+else :
+    MeshExist = 0
+    print('Meshes of tibia not found they will be generated know...')
+    #MeshExist = input("Meshes already created ? (1 for Yes): ")
+
 ##PosFiles = input("Generate GMSH .pos files ? (1 for Yes): ")
 ##if PosFiles!=1 :
 ##    PosFiles=0
@@ -77,7 +90,7 @@ os.chdir(cwd)
 for alpha in [0.0 , 100.0] :
     os.chdir(cwd+'\\CoreFunctions')
     beta = 6.0
-    T, Tanat, ML_Width , AP_Width, ProstName = eng.PlacementTI(SubjectCode,alpha,TypeProth,LongStem,beta,nargout=5)
+    T, Tanat, ML_Width , AP_Width, ProstName, alphaOut = eng.PlacementTI(SubjectCode,alpha,TypeProth,LongStem,beta,nargout=6)
     print(ML_Width) 
     
     os.chdir(cwd)
@@ -107,9 +120,14 @@ for alpha in [0.0 , 100.0] :
     f.close()
     subprocess.call(["FreeCADcmd", 'ScriptFreeCAD_NoCMT_'+SubjectCode +'.py'], shell=True)
 
-    if alpha%1 == 0 :
+    if alpha%1 == 0 and abs(alpha)<20:
         os.rename(cwd+"\\"+"Output_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Output_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt")
         os.rename(cwd+"\\"+"Centrality_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Centrality_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt")
+
+    elif abs(alpha)>30 :
+        os.rename(cwd+"\\"+"Output_" + SubjectCode + "_alpha" + str(round(alphaOut,4))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Output_" + SubjectCode + "_alpha" + str(round(alphaOut,4))+ ".txt")
+        os.rename(cwd+"\\"+"Centrality_" + SubjectCode + "_alpha" + str(round(alphaOut,4))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Centrality_" + SubjectCode + "_alpha" + str(round(alphaOut,4))+ ".txt")
+ 
     else :
         os.rename(cwd+"\\"+"Output_" + SubjectCode + "_alpha" + str(alpha)+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Output_" + SubjectCode + "_alpha" + str(alpha)+ ".txt")
         os.rename(cwd+"\\"+"Centrality_" + SubjectCode + "_alpha" + str(alpha)+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Centrality_" + SubjectCode + "_alpha" + str(alpha)+ ".txt")
@@ -119,7 +137,7 @@ for alpha in [0.0 , 100.0] :
 eng.quit()
 
 
-os.remove('ScriptFreeCAD_'+SubjectCode +'.py')
+os.remove('ScriptFreeCAD_NoCMT_'+SubjectCode +'.py')
 os.rename(cwd+"\\"+"Tibia_" + SubjectCode + ".msh",cwd+"\\Output\\"+SubjectCode+"\\Tibia_" + SubjectCode + ".msh")
 os.rename(cwd+"\\"+"DistTibia_" + SubjectCode + ".msh",cwd+"\\Output\\"+SubjectCode+"\\DistTibia_" + SubjectCode + ".msh")
 

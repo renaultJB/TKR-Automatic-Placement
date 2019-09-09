@@ -17,6 +17,7 @@ tempFiles/
 *.fig
 *.pos
 *.png
+Dict_*.txt
 output_*.txt
 Output_*.txt
 Centrality_*.txt

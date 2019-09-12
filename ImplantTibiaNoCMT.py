@@ -89,7 +89,7 @@ os.chdir(cwd)
 # [-4.5,-1.5,1.5,4.5]
 for alpha in [0.0 , 100.0] :
     os.chdir(cwd+'\\CoreFunctions')
-    beta = 6.0
+    beta = 7.0
     T, Tanat, ML_Width , AP_Width, ProstName, alphaOut = eng.PlacementTI(SubjectCode,alpha,TypeProth,LongStem,beta,nargout=6)
     print(ML_Width) 
     
@@ -123,15 +123,18 @@ for alpha in [0.0 , 100.0] :
     if alpha%1 == 0 and abs(alpha)<20:
         os.rename(cwd+"\\"+"Output_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Output_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt")
         os.rename(cwd+"\\"+"Centrality_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Centrality_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt")
+        os.rename(cwd+"\\"+"outGMSHField.pos",cwd+"\\Output\\"+SubjectCode+"\\outGMSHField_" + SubjectCode + "_alpha" + str(int(alpha))+ ".pos")
 
     elif abs(alpha)>30 :
         os.rename(cwd+"\\"+"Output_" + SubjectCode + "_alpha" + str(round(alphaOut,4))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Output_" + SubjectCode + "_alpha" + str(round(alphaOut,4))+ ".txt")
         os.rename(cwd+"\\"+"Centrality_" + SubjectCode + "_alpha" + str(round(alphaOut,4))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Centrality_" + SubjectCode + "_alpha" + str(round(alphaOut,4))+ ".txt")
+        os.rename(cwd+"\\"+"outGMSHField.pos",cwd+"\\Output\\"+SubjectCode+"\\outGMSHField_" + SubjectCode + "_alpha" + str(round(alphaOut,4)) + ".pos")
+
  
     else :
         os.rename(cwd+"\\"+"Output_" + SubjectCode + "_alpha" + str(alpha)+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Output_" + SubjectCode + "_alpha" + str(alpha)+ ".txt")
         os.rename(cwd+"\\"+"Centrality_" + SubjectCode + "_alpha" + str(alpha)+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Centrality_" + SubjectCode + "_alpha" + str(alpha)+ ".txt")
-        
+        os.rename(cwd+"\\"+"outGMSHField.pos",cwd+"\\Output\\"+SubjectCode+"\\outGMSHField_" + SubjectCode + "_alpha" + str(alpha) + ".pos")
             
 
 eng.quit()

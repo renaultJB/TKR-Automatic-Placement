@@ -401,6 +401,39 @@ PtOnStemTip = getPtOnStemTip(ProsthesisEnd,Nxp);
 % Normal at stem tip
 Nst = T(1:3,1:3)*Nst_0;
 
+% Get central point of medial and lateral condyles
+PtLat_0 = CS.CenterKnee - 0.275*CS.ML_Width_xp*CS.Y';
+IdPt = ProxTib.nearestNeighbor(PtLat_0);
+PtLat = ProxTib.Points(IdPt,:);
+
+PtMed_0 = CS.CenterKnee + 0.275*CS.ML_Width_xp*CS.Y';
+IdPt = ProxTib.nearestNeighbor(PtMed_0);
+PtMed = ProxTib.Points(IdPt,:);
+
+% Posterior point for semimembranosous
+Pt_SM_0 = CS.CenterKnee ...
+          + 0.325*CS.ML_Width_xp*CS.Y' ...
+          - 0.5*CS.AP_Width_xp*LegSide*CS.X' ...
+          - 0.125*(CS.ML_Width_xp+CS.AP_Width_xp)*CS.Z' ;
+IdPt = ProxTib.nearestNeighbor(Pt_SM_0);
+Pt_SM = ProxTib.Points(IdPt,:);
+
+% Pt Fibula
+Pt_Fib_0 = CS.CenterKnee ...
+          - 0.5*CS.ML_Width_xp*CS.Y' ...
+          - 0.4*CS.AP_Width_xp*LegSide*CS.X' ...
+          - 0.2*(CS.ML_Width_xp+CS.AP_Width_xp)*CS.Z' ;
+IdPt = ProxTib.nearestNeighbor(Pt_Fib_0);
+Pt_Fib = ProxTib.Points(IdPt,:);
+
+% Pt SemiTendinosous
+Pt_ST_0 = PtMiddleOfTT ...
+          + 0.2*CS.ML_Width_xp*CS.Y' ...
+          - 0.1*CS.AP_Width_xp*LegSide*CS.X'  ;
+IdPt = ProxTib.nearestNeighbor(Pt_ST_0);
+Pt_ST = ProxTib.Points(IdPt,:);
+
+
 %% Write ouptut files
 [ CtrltyScore, Tabl ] = CentralityScore(ProxTib, Prosthesis, ProsthesisEnd, StemTip);
 writetable(Tabl,['Centrality_' SubjectCode '_alpha' num2str(alpha) '.txt'])
@@ -408,17 +441,26 @@ writetable(Tabl,['Centrality_' SubjectCode '_alpha' num2str(alpha) '.txt'])
 
 %% Data For Dictionnary Creation
 fID1=fopen(['Dict_' SubjectCode '_alpha' num2str(alpha) '.txt'],'w');
+fprintf(fID1,'ImpltType, "%s"\r\n', ProstName );
+fprintf(fID1,'LegSide, "%s"\r\n', LegSideName );
 formatSpec1 = 'T, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f\r\n';
 Tt=T';
 fprintf(fID1,formatSpec1,Tt(:));
 fprintf(fID1,'ZALT, %4.8f\r\n', StemTip_CT(3)+16 );
 fprintf(fID1,'UDiaph, %4.8f, %4.8f, %4.8f\r\n', CS.Z0);
-fprintf(fID1,'Xmech, %4.8f, %4.8f, %4.8f,\r\n', CS.X);
+fprintf(fID1,'O_knee, %4.8f, %4.8f, %4.8f\r\n', CS.CenterKnee);
+fprintf(fID1,'Xmech, %4.8f, %4.8f, %4.8f\r\n', CS.X);
 fprintf(fID1,'Ymech, %4.8f, %4.8f, %4.8f\r\n', CS.Y);
 fprintf(fID1,'Zmech, %4.8f, %4.8f, %4.8f\r\n', CS.Z);
 fprintf(fID1,'Nxp, %4.8f, %4.8f, %4.8f\r\n', Nxp);
 fprintf(fID1,'Pt_xp, %4.8f, %4.8f, %4.8f\r\n', Oxp);
-fprintf(fID1,'Pt_TT, %4.8f, %4.8f, %4.8f\r\n', PtMedialThirdOfTT);
+fprintf(fID1,'Pt_LCC, %4.8f, %4.8f, %4.8f\r\n', PtLat);
+fprintf(fID1,'Pt_MCC, %4.8f, %4.8f, %4.8f\r\n', PtMed);
+fprintf(fID1,'Pt_MTTT, %4.8f, %4.8f, %4.8f\r\n', PtMedialThirdOfTT);
+fprintf(fID1,'Pt_TT, %4.8f, %4.8f, %4.8f\r\n', PtMiddleOfTT);
+fprintf(fID1,'Pt_Fib, %4.8f, %4.8f, %4.8f\r\n', Pt_Fib);
+fprintf(fID1,'Pt_SM, %4.8f, %4.8f, %4.8f\r\n', Pt_SM);
+fprintf(fID1,'Pt_ST, %4.8f, %4.8f, %4.8f\r\n', Pt_ST);
 fprintf(fID1,'Nst, %4.8f, %4.8f, %4.8f\r\n', Nst);
 fprintf(fID1,'Pt_StemTip, %4.8f, %4.8f, %4.8f\r\n', PtOnStemTip);
 fclose(fID1);
@@ -492,6 +534,10 @@ T_str_anat = sprintf(strcat('newplaceAnat=FreeCAD.Matrix',formatSpec2),Tanat(:))
 % Boundary_ProsthesisTP = [CurvesProsthesisTP.Pts(1:5:end-1,:) ; CurvesProsthesisTP.Pts(end,:)];
 % 
 % 
+
+%% Export Pos File for control meshing in GMSH
+Mat3D_final = writeGMSHPosFile(ProxTib,ProsthesisEnd,2.75,1.9,3.5,Nxp,Oxp);
+save('Mat3D_final.mat','Mat3D_final','ProxTib','ProsthesisEnd','Nxp','Oxp')
 
 %% Close all
 

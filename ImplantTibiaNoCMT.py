@@ -87,10 +87,12 @@ eng = matlab.engine.start_matlab()
 os.chdir(cwd)
 # [-12.0,-8.0,-4.0,0.0,4.0,8.0,12.0]
 # [-4.5,-1.5,1.5,4.5]
+# [-4.0,-3.0,-2.0,-1.5,-1.0, 4.5]
 for alpha in [0.0 , 100.0] :
     os.chdir(cwd+'\\CoreFunctions')
     beta = 7.0
     T, Tanat, ML_Width , AP_Width, ProstName, alphaOut = eng.PlacementTI(SubjectCode,alpha,TypeProth,LongStem,beta,nargout=6)
+    alphaOut = round(float(alphaOut),4)
     print(ML_Width) 
     
     os.chdir(cwd)
@@ -105,7 +107,7 @@ for alpha in [0.0 , 100.0] :
     newdata = newdata.replace("PATH2CUT",str(paths2STPfiles[0]))
     newdata = newdata.replace("PATH2IMPLANT",str(paths2STPfiles[1]))
     newdata = newdata.replace("CWD",cwd)
-    newdata = newdata.replace("ALPHA",str(alpha))
+    newdata = newdata.replace("ALPHA",str(alphaOut))
     newdata = newdata.replace("AP_WIDTH",str(AP_Width))
     newdata = newdata.replace("ML_WIDTH",str(ML_Width))
     newdata = newdata.replace("NEW_PLACEMENT_MATRIX",T)
@@ -120,23 +122,24 @@ for alpha in [0.0 , 100.0] :
     f.close()
     subprocess.call(["FreeCADcmd", 'ScriptFreeCAD_NoCMT_'+SubjectCode +'.py'], shell=True)
 
-    if alpha%1 == 0 and abs(alpha)<20:
-        os.rename(cwd+"\\"+"Output_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Output_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt")
-        os.rename(cwd+"\\"+"Centrality_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Centrality_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt")
-        os.rename(cwd+"\\"+"outGMSHField.pos",cwd+"\\Output\\"+SubjectCode+"\\outGMSHField_" + SubjectCode + "_alpha" + str(int(alpha))+ ".pos")
+    if alpha%1 == 0 and abs(alpha)<=20:
+        os.rename(cwd+"\\"+"Output_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Output_" + SubjectCode + "_a" + str(alpha)+ ".txt")
+        os.rename(cwd+"\\"+"Centrality_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Centrality_" + SubjectCode + "_a" + str(alpha)+ ".txt")
+        os.rename(cwd+"\\"+"Dict_" + SubjectCode + "_alpha" + str(int(alpha))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Dict_" + SubjectCode + "_a" + str(alpha)+ ".txt")
+        os.rename(cwd+"\\"+"outGMSHField.pos",cwd+"\\Output\\"+SubjectCode+"\\outGMSHField_" + SubjectCode + "_a" + str(alpha)+ ".pos")
 
-    elif abs(alpha)>30 :
-        os.rename(cwd+"\\"+"Output_" + SubjectCode + "_alpha" + str(round(alphaOut,4))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Output_" + SubjectCode + "_alpha" + str(round(alphaOut,4))+ ".txt")
-        os.rename(cwd+"\\"+"Centrality_" + SubjectCode + "_alpha" + str(round(alphaOut,4))+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Centrality_" + SubjectCode + "_alpha" + str(round(alphaOut,4))+ ".txt")
-        os.rename(cwd+"\\"+"outGMSHField.pos",cwd+"\\Output\\"+SubjectCode+"\\outGMSHField_" + SubjectCode + "_alpha" + str(round(alphaOut,4)) + ".pos")
-
+    elif abs(alpha)>=20 :
+        os.rename(cwd+"\\"+"Output_" + SubjectCode + "_alpha" + str(alphaOut)+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Output_" + SubjectCode + "_a" + str(alphaOut)+ ".txt")
+        os.rename(cwd+"\\"+"Centrality_" + SubjectCode + "_alpha" + str(alphaOut)+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Centrality_" + SubjectCode + "_a" + str(alphaOut)+ ".txt")
+        os.rename(cwd+"\\"+"Dict_" + SubjectCode + "_alpha" + str(alphaOut)+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Dict_" + SubjectCode + "_a" + str(alphaOut)+ ".txt")
+        os.rename(cwd+"\\"+"outGMSHField.pos",cwd+"\\Output\\"+SubjectCode+"\\outGMSHField_" + SubjectCode + "_a" + str(alphaOut) + ".pos")
  
     else :
-        os.rename(cwd+"\\"+"Output_" + SubjectCode + "_alpha" + str(alpha)+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Output_" + SubjectCode + "_alpha" + str(alpha)+ ".txt")
-        os.rename(cwd+"\\"+"Centrality_" + SubjectCode + "_alpha" + str(alpha)+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Centrality_" + SubjectCode + "_alpha" + str(alpha)+ ".txt")
-        os.rename(cwd+"\\"+"outGMSHField.pos",cwd+"\\Output\\"+SubjectCode+"\\outGMSHField_" + SubjectCode + "_alpha" + str(alpha) + ".pos")
+        os.rename(cwd+"\\"+"Output_" + SubjectCode + "_alpha" + str(alpha)+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Output_" + SubjectCode + "_a" + str(alpha)+ ".txt")
+        os.rename(cwd+"\\"+"Centrality_" + SubjectCode + "_alpha" + str(alpha)+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Centrality_" + SubjectCode + "_a" + str(alpha)+ ".txt")
+        os.rename(cwd+"\\"+"Dict_" + SubjectCode + "_alpha" + str(alpha)+ ".txt",cwd+"\\Output\\"+SubjectCode+"\\Dict_" + SubjectCode + "_a" + str(alpha)+ ".txt")
+        os.rename(cwd+"\\"+"outGMSHField.pos",cwd+"\\Output\\"+SubjectCode+"\\outGMSHField_" + SubjectCode + "_a" + str(alpha) + ".pos")
             
-
 eng.quit()
 
 

@@ -2,8 +2,9 @@ data/
 gmsh/
 Notes/
 testData/
-Output/
 tempFiles/
+output/*/
+Output/*/
 *.msh
 *.stp
 *.step
@@ -17,7 +18,14 @@ tempFiles/
 *.fig
 *.pos
 *.png
+*.inp
+*.dcm
+*.vtk
 Dict_*.txt
 output_*.txt
 Output_*.txt
 Centrality_*.txt
+Dict_*.txt
+BoneMat*.txt
+Abqs*.py
+*Euromech*.py

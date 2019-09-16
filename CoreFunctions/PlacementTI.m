@@ -484,9 +484,9 @@ fprintf(fID1,'Pt_TT, %4.8f, %4.8f, %4.8f\r\n', PtMiddleOfTT);
 fprintf(fID1,'Pt_Fib, %4.8f, %4.8f, %4.8f\r\n', Pt_Fib); # Tibia fibular articular surface center
 fprintf(fID1,'Pt_SM, %4.8f, %4.8f, %4.8f\r\n', Pt_SM); # Semimembranosous tibial insertion
 fprintf(fID1,'Pt_ST, %4.8f, %4.8f, %4.8f\r\n', Pt_ST); # Semitendinosous tibial insertion
-fprintf(fID1,'Pt_SM, %4.8f, %4.8f, %4.8f\r\n', Pt_Sol); # Soleus tibial insertion
-fprintf(fID1,'Pt_SM, %4.8f, %4.8f, %4.8f\r\n', Pt_TA); # Tibialis Anterior tibial insertion
-fprintf(fID1,'Pt_ST, %4.8f, %4.8f, %4.8f\r\n', Pt_TP); # Tibialis Posterior tibial insertion
+fprintf(fID1,'Pt_Sol, %4.8f, %4.8f, %4.8f\r\n', Pt_Sol); # Soleus tibial insertion
+fprintf(fID1,'Pt_TA, %4.8f, %4.8f, %4.8f\r\n', Pt_TA); # Tibialis Anterior tibial insertion
+fprintf(fID1,'Pt_TP, %4.8f, %4.8f, %4.8f\r\n', Pt_TP); # Tibialis Posterior tibial insertion
 fprintf(fID1,'Nst, %4.8f, %4.8f, %4.8f\r\n', Nst);
 fprintf(fID1,'Pt_StemTip, %4.8f, %4.8f, %4.8f\r\n', PtOnStemTip);
 fclose(fID1);

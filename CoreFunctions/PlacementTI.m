@@ -330,7 +330,7 @@ Rp = rot(Nxp,x(3));
 U_it = [cosd(x(3)) ; sind(x(3)) ; 0];
 U_t = normalizeV(CS.Paxial*(R_xp*U_it));
 theta_it = rad2deg(acos(CS.Y'*U_t));
-deltaTheta = theta_TTA - theta_it; % Rotational error in degree 18° is the physiological value
+deltaTheta = theta_TTA - theta_it; % Rotational error in degree 18Â° is the physiological value
 
 %
 gamma = deg2rad(x(3));
@@ -422,7 +422,7 @@ Pt_SM = ProxTib.Points(IdPt,:);
 Pt_Fib_0 = CS.CenterKnee ...
           - 0.5*CS.ML_Width_xp*CS.Y' ...
           - 0.4*CS.AP_Width_xp*LegSide*CS.X' ...
-          - 0.2*(CS.ML_Width_xp+CS.AP_Width_xp)*CS.Z' ;
+          - 0.22*(CS.ML_Width_xp+CS.AP_Width_xp)*CS.Z' ;
 IdPt = ProxTib.nearestNeighbor(Pt_Fib_0);
 Pt_Fib = ProxTib.Points(IdPt,:);
 
@@ -433,6 +433,29 @@ Pt_ST_0 = PtMiddleOfTT ...
 IdPt = ProxTib.nearestNeighbor(Pt_ST_0);
 Pt_ST = ProxTib.Points(IdPt,:);
 
+% Pt Soleus
+Pt_Sol_0 = PtMiddleOfTT ...
+          - 0.05*CS.ML_Width_xp*CS.Y' ...
+          - 0.9*CS.AP_Width_xp*LegSide*CS.X'...
+          - 0.8*CS.AP_Width_xp*CS.Z'  ;
+IdPt = ProxTib.nearestNeighbor(Pt_Sol_0);
+Pt_Sol = ProxTib.Points(IdPt,:);
+
+% Pt Tibialis Anterior
+Pt_TA_0 = PtMiddleOfTT ...
+          - 0.15*CS.ML_Width_xp*CS.Y' ...
+          - 0.5*CS.AP_Width_xp*LegSide*CS.X'...
+          - 0.6*CS.AP_Width_xp*CS.Z';
+IdPt = ProxTib.nearestNeighbor(Pt_TA_0);
+Pt_TA = ProxTib.Points(IdPt,:);
+
+% Pt Tibialis Posterior
+Pt_TP_0 = PtMiddleOfTT ...
+          - 0.1*CS.ML_Width_xp*CS.Y' ...
+          - 0.9*CS.AP_Width_xp*LegSide*CS.X'...
+          - 1.0*CS.AP_Width_xp*CS.Z'   ;
+IdPt = ProxTib.nearestNeighbor(Pt_TP_0);
+Pt_TP = ProxTib.Points(IdPt,:);
 
 %% Write ouptut files
 [ CtrltyScore, Tabl ] = CentralityScore(ProxTib, Prosthesis, ProsthesisEnd, StemTip);
@@ -457,10 +480,13 @@ fprintf(fID1,'Pt_xp, %4.8f, %4.8f, %4.8f\r\n', Oxp);
 fprintf(fID1,'Pt_LCC, %4.8f, %4.8f, %4.8f\r\n', PtLat);
 fprintf(fID1,'Pt_MCC, %4.8f, %4.8f, %4.8f\r\n', PtMed);
 fprintf(fID1,'Pt_MTTT, %4.8f, %4.8f, %4.8f\r\n', PtMedialThirdOfTT);
-fprintf(fID1,'Pt_TT, %4.8f, %4.8f, %4.8f\r\n', PtMiddleOfTT);
-fprintf(fID1,'Pt_Fib, %4.8f, %4.8f, %4.8f\r\n', Pt_Fib);
-fprintf(fID1,'Pt_SM, %4.8f, %4.8f, %4.8f\r\n', Pt_SM);
-fprintf(fID1,'Pt_ST, %4.8f, %4.8f, %4.8f\r\n', Pt_ST);
+fprintf(fID1,'Pt_TT, %4.8f, %4.8f, %4.8f\r\n', PtMiddleOfTT); 
+fprintf(fID1,'Pt_Fib, %4.8f, %4.8f, %4.8f\r\n', Pt_Fib); # Tibia fibular articular surface center
+fprintf(fID1,'Pt_SM, %4.8f, %4.8f, %4.8f\r\n', Pt_SM); # Semimembranosous tibial insertion
+fprintf(fID1,'Pt_ST, %4.8f, %4.8f, %4.8f\r\n', Pt_ST); # Semitendinosous tibial insertion
+fprintf(fID1,'Pt_SM, %4.8f, %4.8f, %4.8f\r\n', Pt_Sol); # Soleus tibial insertion
+fprintf(fID1,'Pt_SM, %4.8f, %4.8f, %4.8f\r\n', Pt_TA); # Tibialis Anterior tibial insertion
+fprintf(fID1,'Pt_ST, %4.8f, %4.8f, %4.8f\r\n', Pt_TP); # Tibialis Posterior tibial insertion
 fprintf(fID1,'Nst, %4.8f, %4.8f, %4.8f\r\n', Nst);
 fprintf(fID1,'Pt_StemTip, %4.8f, %4.8f, %4.8f\r\n', PtOnStemTip);
 fclose(fID1);
@@ -470,14 +496,14 @@ fID3=fopen(['Output_' SubjectCode '_alpha' num2str(alpha) '.txt'],'w');
 fprintf(fID3,'name= "%s" \r\n', SubjectCode );
 fprintf(fID3,'ZALT= \r\n %4.8f \r\n', StemTip_CT(3)+16 );
 fprintf(fID3,'Axe Diaphise : \r\n %4.8f %4.8f %4.8f  \r\n', CS.Z0);
-fprintf(fID3,'Axe Méca X : \r\n %4.8f %4.8f %4.8f  \r\n', CS.X);
-fprintf(fID3,'Axe Méca Y : \r\n %4.8f %4.8f %4.8f  \r\n', CS.Y);
-fprintf(fID3,'Axe Méca Z : \r\n %4.8f %4.8f %4.8f  \r\n', CS.Z);
+fprintf(fID3,'Axe MÃ©ca X : \r\n %4.8f %4.8f %4.8f  \r\n', CS.X);
+fprintf(fID3,'Axe MÃ©ca Y : \r\n %4.8f %4.8f %4.8f  \r\n', CS.Y);
+fprintf(fID3,'Axe MÃ©ca Z : \r\n %4.8f %4.8f %4.8f  \r\n', CS.Z);
 fprintf(fID3,'Normal plateau tibial : \r\n %4.8f %4.8f %4.8f  \r\n', Nxp);
 fprintf(fID3,'Angle Diaphise/Plateau tibial plan Frontal (angle varus) : \r\n %2.2f   \r\n', Angle_Varus);
 fprintf(fID3,'Angle Diaphise/Plateau tibial plan Sagittal (pente tibial) : \r\n %2.2f   \r\n', Angle_Slope);
 fprintf(fID3,'Coverage : \r\n %2.2f %   \r\n', coverage);
-fprintf(fID3,'Rotation : \r\n %2.2f °  \r\n', malRotation);
+fprintf(fID3,'Rotation : \r\n %2.2f Â°  \r\n', malRotation);
 fprintf(fID3,'Angle Diaphise/Plateau tibial plan Sagittal (pente tibial) : \r\n %2.2f   \r\n', Angle_Slope);
 fprintf(fID3,'Centrality Scores CV : \r\n %2.2f   \r\n', CtrltyScore.CV);
 fprintf(fID3,'Centrality Scores Min/Max : \r\n %2.2f   \r\n', CtrltyScore.MinMax);

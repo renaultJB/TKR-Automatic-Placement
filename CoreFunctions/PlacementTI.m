@@ -96,7 +96,8 @@ CS.Paxial = At*inv(At'*At)*At';
 %% Perform measurements
 % "Tibial Varus" angle (MMPTA)
 Ztp__ProjmechYZ = normalizeV(CS.Pfront*CS.Ztp);
-Angle_Varus = rad2deg(asin(Ztp__ProjmechYZ'*CS.Y)); %MMPTA
+Angle_Varus = rad2deg(asin(Ztp__ProjmechYZ'*CS.Y));
+mMPTA = 90 - Angle_Varus;
 
 % Tibial Slope
 Angle_Slope = -LegSide*rad2deg(asin(CS.Ztp'*CS.X));
@@ -117,8 +118,10 @@ if abs(alpha) > 30
     alpha = -Angle_Varus;
     beta = Angle_Slope;
     KA = 1; %Kinematic Alignment.
+    Alignment = 'Kine';
 else
     KA = 0;
+    Alignment = 'Mech';
 end
 
 %% Define the Cutting plan and its associated CS (U_xp, V_xp, Nxp)
@@ -466,35 +469,42 @@ writetable(Tabl,['Centrality_' SubjectCode '_alpha' num2str(alpha) '.txt'])
 fID1=fopen(['Dict_' SubjectCode '_alpha' num2str(alpha) '.txt'],'w');
 fprintf(fID1,'ImpltType, "%s"\r\n', ProstName );
 fprintf(fID1,'LegSide, "%s"\r\n', LegSideName );
+fprintf(fID1,'Alignment, "%s"\r\n', Alignment );
 formatSpec1 = 'T, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f, %4.8f\r\n';
 Tt=T';
 fprintf(fID1,formatSpec1,Tt(:));
-fprintf(fID1,'ZALT, %4.8f\r\n', StemTip_CT(3)+16 );
+fprintf(fID1,'ZALT, %4.1f\r\n', StemTip_CT(3)+16 );
+fprintf(fID1,'alpha, %4.2f \r\n', alpha );
+fprintf(fID1,'beta, %4.2f \r\n', beta );% Posterior slope of implantation relative to mechanical axis
+fprintf(fID1,'mMPTA, %4.2f \r\n', mMPTA );
+fprintf(fID1,'TPslope, %4.2f \r\n', Angle_Slope ); % Posterior slope of tibial plateau relative to mechanical axis
 fprintf(fID1,'UDiaph, %4.8f, %4.8f, %4.8f\r\n', CS.Z0);
 fprintf(fID1,'O_knee, %4.8f, %4.8f, %4.8f\r\n', CS.CenterKnee);
 fprintf(fID1,'Xmech, %4.8f, %4.8f, %4.8f\r\n', CS.X);
 fprintf(fID1,'Ymech, %4.8f, %4.8f, %4.8f\r\n', CS.Y);
 fprintf(fID1,'Zmech, %4.8f, %4.8f, %4.8f\r\n', CS.Z);
+fprintf(fID1,'Ztp, %4.8f, %4.8f, %4.8f\r\n', CS.Ztp);
 fprintf(fID1,'Nxp, %4.8f, %4.8f, %4.8f\r\n', Nxp);
 fprintf(fID1,'Pt_xp, %4.8f, %4.8f, %4.8f\r\n', Oxp);
 fprintf(fID1,'Pt_LCC, %4.8f, %4.8f, %4.8f\r\n', PtLat);
 fprintf(fID1,'Pt_MCC, %4.8f, %4.8f, %4.8f\r\n', PtMed);
 fprintf(fID1,'Pt_MTTT, %4.8f, %4.8f, %4.8f\r\n', PtMedialThirdOfTT);
 fprintf(fID1,'Pt_TT, %4.8f, %4.8f, %4.8f\r\n', PtMiddleOfTT); 
-fprintf(fID1,'Pt_Fib, %4.8f, %4.8f, %4.8f\r\n', Pt_Fib); # Tibia fibular articular surface center
-fprintf(fID1,'Pt_SM, %4.8f, %4.8f, %4.8f\r\n', Pt_SM); # Semimembranosous tibial insertion
-fprintf(fID1,'Pt_ST, %4.8f, %4.8f, %4.8f\r\n', Pt_ST); # Semitendinosous tibial insertion
-fprintf(fID1,'Pt_Sol, %4.8f, %4.8f, %4.8f\r\n', Pt_Sol); # Soleus tibial insertion
-fprintf(fID1,'Pt_TA, %4.8f, %4.8f, %4.8f\r\n', Pt_TA); # Tibialis Anterior tibial insertion
-fprintf(fID1,'Pt_TP, %4.8f, %4.8f, %4.8f\r\n', Pt_TP); # Tibialis Posterior tibial insertion
+fprintf(fID1,'Pt_Fib, %4.8f, %4.8f, %4.8f\r\n', Pt_Fib); % Tibia fibular articular surface center
+fprintf(fID1,'Pt_SM, %4.8f, %4.8f, %4.8f\r\n', Pt_SM); % Semimembranosous tibial insertion
+fprintf(fID1,'Pt_ST, %4.8f, %4.8f, %4.8f\r\n', Pt_ST); % Semitendinosous tibial insertion
+fprintf(fID1,'Pt_Sol, %4.8f, %4.8f, %4.8f\r\n', Pt_Sol); % Soleus tibial insertion
+fprintf(fID1,'Pt_TA, %4.8f, %4.8f, %4.8f\r\n', Pt_TA); % Tibialis Anterior tibial insertion
+fprintf(fID1,'Pt_TP, %4.8f, %4.8f, %4.8f\r\n', Pt_TP); % Tibialis Posterior tibial insertion
 fprintf(fID1,'Nst, %4.8f, %4.8f, %4.8f\r\n', Nst);
-fprintf(fID1,'Pt_StemTip, %4.8f, %4.8f, %4.8f\r\n', PtOnStemTip);
+fprintf(fID1,'Pt_StemTip, %4.3f, %4.3f, %4.3f\r\n', PtOnStemTip);
 fclose(fID1);
 
 %% Data for FreeCAD and general data
 fID3=fopen(['Output_' SubjectCode '_alpha' num2str(alpha) '.txt'],'w');
 fprintf(fID3,'name= "%s" \r\n', SubjectCode );
 fprintf(fID3,'ZALT= \r\n %4.8f \r\n', StemTip_CT(3)+16 );
+fprintf(fID3,'alpha= \r\n %4.8f \r\n', alpha );
 fprintf(fID3,'Axe Diaphise : \r\n %4.8f %4.8f %4.8f  \r\n', CS.Z0);
 fprintf(fID3,'Axe Méca X : \r\n %4.8f %4.8f %4.8f  \r\n', CS.X);
 fprintf(fID3,'Axe Méca Y : \r\n %4.8f %4.8f %4.8f  \r\n', CS.Y);
@@ -562,7 +572,7 @@ T_str_anat = sprintf(strcat('newplaceAnat=FreeCAD.Matrix',formatSpec2),Tanat(:))
 % 
 
 %% Export Pos File for control meshing in GMSH
-Mat3D_final = writeGMSHPosFile(ProxTib,ProsthesisEnd,2.75,1.9,3.5,Nxp,Oxp);
+Mat3D_final = writeGMSHPosFile(ProxTib,ProsthesisEnd,2.25,1.75,2.75,Nxp,Oxp);
 save('Mat3D_final.mat','Mat3D_final','ProxTib','ProsthesisEnd','Nxp','Oxp')
 
 %% Close all

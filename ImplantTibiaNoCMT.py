@@ -93,7 +93,7 @@ for alpha in [0.0 , 100.0] :
     beta = 7.0
     T, Tanat, ML_Width , AP_Width, ProstName, alphaOut = eng.PlacementTI(SubjectCode,alpha,TypeProth,LongStem,beta,nargout=6)
     alphaOut = round(float(alphaOut),4)
-    print(ML_Width) 
+    print(ML_Width)
     
     os.chdir(cwd)
 

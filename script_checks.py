@@ -39,13 +39,15 @@ def find_ProsthFiles(directory,Pname,Ptype,CmtOnly=False):
     prosthType = 'Prosthesis'+str(Ptype)
     if CmtOnly :
         filesPref = ['Cut_','Implant'+str(Ptype)]
+        suffix = '_simple.stp' 
     else :
         filesPref = ['C_','Cut_','Implant'+str(Ptype)]
+        suffix = '.stp'
     for path, subdirs, files in os.walk(directory):
         for name in files:
             files_list.append(os.path.join(path, name))
     filesList = []
     for filePref in filesPref :
-        A = [fdir for fdir in files_list  if prosthType in fdir and Pname in fdir and filePref in fdir and '.stp' in fdir]
+        A = [fdir for fdir in files_list  if prosthType in fdir and Pname in fdir and filePref in fdir and suffix in fdir]
         filesList.append(str(A[0]))
     return filesList

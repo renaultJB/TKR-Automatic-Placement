@@ -52,11 +52,11 @@ Mat3D_bone = Mat3D;
 invCortSize = 4/CortSize;
 for l=1:length(Pts_bone)
     Mat3D_bone(round(X_t_bone(l))+10,round(Y_t_bone(l))+10,round(Z_t_bone(l))+10)=...
-        invCortSize/max(1,(1.6-0.7*Z_t_bone(l)/ceil(Zmax-Zmin)));
+        invCortSize/max(1,(4.6-4.0*Z_t_bone(l)/ceil(Zmax-Zmin)));
 end
 
-Mat3D_blurred_implt = imgaussfilt3(Mat3D_implt,4.5);
-Mat3D_blurred_bone = imgaussfilt3(Mat3D_bone,4.5);
+Mat3D_blurred_implt = imgaussfilt3(Mat3D_implt,5);
+Mat3D_blurred_bone = imgaussfilt3(Mat3D_bone,5.5);
 
 Mat3D_blurred_max = max(Mat3D_blurred_implt,Mat3D_blurred_bone);
 

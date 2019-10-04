@@ -144,6 +144,7 @@ eng.quit()
 
 
 os.remove('ScriptFreeCAD_NoCMT_'+SubjectCode +'.py')
+os.remove('ScriptFreeCAD_NoCMT_'+SubjectCode +'.pyc')
 os.rename(cwd+"\\"+"Tibia_" + SubjectCode + ".msh",cwd+"\\Output\\"+SubjectCode+"\\Tibia_" + SubjectCode + ".msh")
 os.rename(cwd+"\\"+"DistTibia_" + SubjectCode + ".msh",cwd+"\\Output\\"+SubjectCode+"\\DistTibia_" + SubjectCode + ".msh")
 

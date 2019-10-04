@@ -20,7 +20,7 @@ DirList = os.listdir(os.getcwd())
 # =============================================================================
 # Identify correct files
 # =============================================================================
-CorrectFileID = [f for f in DirList if f[0:6] in ['Tibia_','TIBIA_','tibia_'] and f[-3:] in ['tep','stp'] and '_cutted_' in f] #
+CorrectFileID = [f for f in DirList if f[0:6] in ['Tibia_','TIBIA_','tibia_'] and f[-3:] in ['tep','stp'] and '_cut' in f] #'_cutted_'
 CorrectFileID.sort()
 
 # =============================================================================

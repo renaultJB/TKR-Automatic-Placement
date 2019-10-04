@@ -35,7 +35,7 @@ if nargin == 4
     beta = 7;
 end
 Zoffset_tp = 10; % offset of the tibial plateau plan to calculate dimension
-ResectionOffset = 2.5 ;
+ResectionOffset = 2.25 ;
 CmtThickness = 0.;
 PhysioTTAangle = 12.5;
 
@@ -572,8 +572,8 @@ T_str_anat = sprintf(strcat('newplaceAnat=FreeCAD.Matrix',formatSpec2),Tanat(:))
 % 
 
 %% Export Pos File for control meshing in GMSH
-Mat3D_final = writeGMSHPosFile(ProxTib,ProsthesisEnd,2.25,1.75,2.75,Nxp,Oxp);
-save('Mat3D_final.mat','Mat3D_final','ProxTib','ProsthesisEnd','Nxp','Oxp')
+Mat3D_final = writeGMSHPosFile(ProxTib,ProsthesisEnd,2.2,1.7,2.7,Nxp,Oxp);
+%save('Mat3D_final.mat','Mat3D_final','ProxTib','ProsthesisEnd','Nxp','Oxp')
 
 %% Close all
 

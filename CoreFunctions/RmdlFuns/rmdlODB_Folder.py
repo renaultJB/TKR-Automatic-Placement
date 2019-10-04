@@ -202,8 +202,8 @@ for mdlName in mdlNames_WM :
             postOp_SED = postOp.steps[stepName].frames[-1].fieldOutputs['ESEDEN']
             SED =  postOp_SED.getSubset(region=TibRA_ES_ALL)
             #
-            postOp_Sref = postOp.steps[stepName].frames[-1].fieldOutputs['Sref']
-            Sref =  postOp_Sref.getSubset(region=TibRA_ES_ALL)
+            #postOp_Sref = postOp.steps[stepName].frames[-1].fieldOutputs['Sref']
+            #Sref =  postOp_Sref.getSubset(region=TibRA_ES_ALL)
             
             # Compute Strain Energy Density Shielding field for the current model relative to the préop situation
             SEMD = postOp.steps[stepName].frames[-1].FieldOutput(name='SEMD',
@@ -221,8 +221,8 @@ for mdlName in mdlNames_WM :
             elmtData = []
             for i, val in enumerate(SED.values) :
                 E = dict_El_E[val.elementLabel]
-                rho = rho_from_E(E,law)
-                Data_rho.append((rho,))
+                rho = rmdl_funs.rho_from_E(E,law)
+                Data_Rho.append((rho,))
                 
                 S = val.data/rho
                 Data_S.append((S,))
@@ -243,9 +243,7 @@ for mdlName in mdlNames_WM :
                 labels=elmtData, data=Data_SEDsh)
             SEMDsh.addData(position=WHOLE_ELEMENT, instance=TibRA,
                 labels=elmtData, data=Data_deltaS)
-            RHO.addData(position=WHOLE_ELEMENT, instance=TibRA,
-                labels=elmtData, data=Data_Rho)
-
+            RHO.addData(position=WHOLE_ELEMENT, instance=TibRA, labels=elmtData, data=Data_Rho)
         # Get the equivalent strain enery density 1st strategy : Mean diff
         S_Equi = { el : np.mean(s) for el, s in Dict_S.items() }
         
@@ -257,7 +255,7 @@ for mdlName in mdlNames_WM :
         dict_Elset_Rmdl = {k: [] for k in dict_Elset.keys()}
 
         for el in dict_El_E:
-            dict_El_E_Rmdl[el] = rmdl_funs.bone_remodeling(dict_El_E[el], S_Equi[el], Sref_Equi, dt, law)
+            dict_El_E_Rmdl[el] = rmdl_funs.bone_remodeling(dict_El_E[el], S_Equi[el], Sref_Equi[el], dt, law)
             E_closest = rmdl_funs.find_nearest_E_group(sorted(dict_E_Elset.keys()),dict_El_E_Rmdl[el])
             dict_Elset_Rmdl[dict_E_Elset[E_closest]].append(el)
                 
@@ -304,7 +302,7 @@ for mdlName in mdlNames_WM :
         TBCMT_Elset_Rmdl = {k: [] for k in TBCMT_Elset.keys()}
 
         for el in TBCMT_El_E:
-            TBCMT_El_E_Rmdl[el] = rmdl_funs.tbcmt_remodeling(TBCMT_El_E[el],TBCMT_El_SvM[el])
+            TBCMT_El_E_Rmdl[el] = rmdl_funs.tbcmt_remodeling(TBCMT_El_E[el],TBCMT_El_SvM[el],dt)
             E_closest = rmdl_funs.find_nearest_E_group(sorted(TBCMT_E_Elset.keys()),TBCMT_El_E_Rmdl[el])
             TBCMT_Elset_Rmdl[TBCMT_E_Elset[E_closest]].append(el)
         
@@ -315,7 +313,7 @@ for mdlName in mdlNames_WM :
         #-----------------------------------------------------------------
         pElset2 = re.compile('elset=('+elSetKeyword+'[0-9]+)',re.IGNORECASE)
         pElset3 = re.compile('elset=('+'SECT_TB-PMMA'+'[0-9]+)',re.IGNORECASE)
-        name_rmdl = mdlName +'_Op_'+ str(epoch+1)                
+        name_rmdl = mdlName_short.replace('.', '_') +'_Op_'+ str(epoch+1)                
         fout = open(name_rmdl + '.inp','w')
         with open(name_curr + '.inp', 'r') as f:
             writeLine = True

@@ -160,9 +160,9 @@ def rho_to_E(rho,law='Carter77') :
         if rho < 0.572 :
             E = 15520.0*rho**1.93
         elif rho > 1.2 :
-            E = 10714.0*E**0.74
+            E = 10714.0*rho**0.74
         else :
-            E = 9965.0*E**1.137
+            E = 9965.0*rho**1.137
     # Ensure that E is always positive
     E = max(0.5,E)
     return E
@@ -174,12 +174,12 @@ def bone_remodeling(E, S, Sref, dt, law='Carter77') :
     lz = 0.75 # Lazy zone coefficient -> Huiskes 1992
     tau = 115 # remodelling rate
     rho_i = rho_from_E(E,law)
-    a_rho = a_rho(rho_i, 'Adams2014') # Specific surface
+    a = a_rho(rho_i, 'Adams2014') # Specific surface
     
     if S < (1-lz)*Sref :
-        delta_rho =  tau * a_rho * ( S - (1-lz)*Sref )
+        delta_rho =  tau * a * ( S - (1-lz)*Sref )
     elif  S > (1+lz)*Sref :
-        delta_rho =  tau * a_rho * ( S - (1+lz)*Sref )
+        delta_rho =  tau * a * ( S - (1+lz)*Sref )
     else :
         delta_rho = 0
 

@@ -24,8 +24,7 @@ ggplot(DF, aes(Epoch, Lshare100 , color = alpha)) +
   ylab('Load Bypass (%)') + 
   theme(axis.text=element_text(size=14), axis.title = element_text(size=20))
 
-ggplot(DF, aes(Epoch, Lshare100 , fill = alpha)) + 
-  geom_bar(stat="identity", position=position_dodge())) + theme_classic() +
-  xlab('Epoch') +
-  ylab('Load Bypass (%)') + 
+ggplot(DF, aes(x = Epoch, y = Lshare100 , fill = alpha)) + 
+  geom_bar(stat="identity", position=position_dodge())+
+  theme_classic() + xlab('Epoch') + ylab('Load Bypass (%)') + 
   theme(axis.text=element_text(size=14), axis.title = element_text(size=20))

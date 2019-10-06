@@ -378,11 +378,11 @@ def creaPostOpMdl(mdlName,nCPUs) :
                 distributionType=UNIFORM, field='', localCsys= R_Implt)
 
             mdl1.Moment(name='TKRMoments', 
-                createStepName=stepName, region=GS_RPtOriImplt, cm1=0.1, cm2=LSign*M_y, cm3=M_z, 
+                createStepName=stepName, region=GS_RPtOriImplt, cm1=LSign*0.1, cm2=M_y, cm3=LSign*M_z, 
                 distributionType=UNIFORM, field='', localCsys= R_Implt)
         else :
             mdl1.loads['TKRForces'].setValuesInStep(stepName=stepName, cf1=F_x, cf2=LSign*F_y, cf3=F_z)           
-            mdl1.loads['TKRMoments'].setValuesInStep(stepName=stepName, cm1=0.1, cm2=LSign*M_y, cm3=M_z)
+            mdl1.loads['TKRMoments'].setValuesInStep(stepName=stepName, cm1=LSign*0.1, cm2=M_y, cm3=LSign*M_z)
 
         i += 1
             

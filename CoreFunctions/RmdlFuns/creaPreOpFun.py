@@ -415,11 +415,11 @@ def creaPreOpMdl(mdlName,nCPUs):
                 distributionType=UNIFORM, field='', localCsys=R_TP)
 
             mdl1.Moment(name='TKRMoments', 
-                createStepName=stepName, region=GS_RPtOriKnee, cm1=0.1, cm2=LSign*M_y, cm3=0.1, 
+                createStepName=stepName, region=GS_RPtOriKnee, cm1=LSign*0.1, cm2=M_y, cm3=LSign*0.1, 
                 distributionType=UNIFORM, field='', localCsys=R_TP)
         else :
             mdl1.loads['TKRForces'].setValuesInStep(stepName=stepName, cf1=F_x, cf2=LSign*F_y, cf3=F_z)           
-            mdl1.loads['TKRMoments'].setValuesInStep(stepName=stepName, cm1=0.1, cm2=LSign*M_y, cm3=0.1)
+            mdl1.loads['TKRMoments'].setValuesInStep(stepName=stepName, cm1=LSign*0.1, cm2=M_y, cm3=LSign*0.1)
 
         i += 1
             
@@ -458,5 +458,4 @@ def creaPreOpMdl(mdlName,nCPUs):
 
     mdb.jobs[jobName].writeInput(consistencyChecking=OFF)
     mdb.saveAs(pathName=cwd+'/CAEs/'+jobName)
-    os.rename()
     

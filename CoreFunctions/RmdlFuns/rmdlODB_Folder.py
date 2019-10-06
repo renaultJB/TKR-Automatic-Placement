@@ -17,16 +17,16 @@ import math
 import re
 
 
-os.chdir(r'C:\Users\Doctorant\Documents\GitHub\TKR-Automatic-Placement\Output\TRO_L\testRMDL')
+os.chdir(r'C:\Users\Doctorant\Documents\JB\Rmdl_Macro\TRO_L')
 # cwd = os.getcwd() + '\\'
 #-----------------------------------------------------------------
 # Parameters
 matKeyword = 'MAT_'
 elSetKeyword = 'SET_'
 partName = 'TIBIA-1'
-nCPUs = 4
+nCPUs = 8
 rmdl_T = 0.40
-dt = 1./3.
+dt = 1./2.
 law = 'Morgan2003' # Rho to E law used in the models
 #-----------------------------------------------------------------
 import section
@@ -139,7 +139,7 @@ for mdlName in mdlNames_WM :
 
     Sref_Equi = { el : np.mean(s) for el, s in Dict_Sref.items() }
 
-    while epoch < 3 :
+    while epoch < 1 :
         name_curr = mdlName_short.replace('.', '_') +'_Op_'+ str(epoch)
         # Check if current epoch post Op analysis has already been executed, launched it otherwise
         if not os.path.isfile(name_curr+'.odb'):
@@ -214,15 +214,19 @@ for mdlName in mdlNames_WM :
                                 description='Strain Energy Massic Density shielding', type=SCALAR)
             RHO = postOp.steps[stepName].frames[-1].FieldOutput(name='rho',
                                 description='Apparent Density of TB', type=SCALAR)
+            E_MOD = postOp.steps[stepName].frames[-1].FieldOutput(name='E_Mod',
+                                description='Elastic Modulus of material', type=SCALAR)
             Data_S = []
             Data_deltaS = []
             Data_SEDsh = []
             Data_Rho = []
+            Data_E_Mod = []
             elmtData = []
             for i, val in enumerate(SED.values) :
                 E = dict_El_E[val.elementLabel]
                 rho = rmdl_funs.rho_from_E(E,law)
                 Data_Rho.append((rho,))
+                Data_E_Mod.append((E,))
                 
                 S = val.data/rho
                 Data_S.append((S,))
@@ -244,6 +248,7 @@ for mdlName in mdlNames_WM :
             SEMDsh.addData(position=WHOLE_ELEMENT, instance=TibRA,
                 labels=elmtData, data=Data_deltaS)
             RHO.addData(position=WHOLE_ELEMENT, instance=TibRA, labels=elmtData, data=Data_Rho)
+            E_MOD.addData(position=WHOLE_ELEMENT, instance=TibRA, labels=elmtData, data=Data_E_Mod)
         # Get the equivalent strain enery density 1st strategy : Mean diff
         S_Equi = { el : np.mean(s) for el, s in Dict_S.items() }
         
@@ -301,10 +306,28 @@ for mdlName in mdlNames_WM :
         TBCMT_El_E_Rmdl = dict()
         TBCMT_Elset_Rmdl = {k: [] for k in TBCMT_Elset.keys()}
 
+        
         for el in TBCMT_El_E:
             TBCMT_El_E_Rmdl[el] = rmdl_funs.tbcmt_remodeling(TBCMT_El_E[el],TBCMT_El_SvM[el],dt)
             E_closest = rmdl_funs.find_nearest_E_group(sorted(TBCMT_E_Elset.keys()),TBCMT_El_E_Rmdl[el])
             TBCMT_Elset_Rmdl[TBCMT_E_Elset[E_closest]].append(el)
+
+
+
+        for stepName in postOp.steps.keys() :
+            Data_E_Mod = []
+            elmtData = []
+            if 'E_Mod' not in postOp.steps[stepName].frames[-1].fieldOutputs.keys() :
+                E_Mod = postOp.steps[stepName].frames[-1].FieldOutput(name='E_Mod',
+                                description='Elastic Modulus of material', type=SCALAR)
+            else :
+                E_Mod = postOp.steps[stepName].frames[-1].fieldOutputs['E_Mod']
+                
+            for el, E in TBCMT_El_E.iteritems(): 
+                Data_E_Mod.append((E,))
+                elmtData.append(el)
+                
+            E_MOD.addData(position=WHOLE_ELEMENT, instance=TibRA, labels=elmtData, data=Data_E_Mod)
         
         #-----------------------------------------------------------------
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -354,3 +377,6 @@ for mdlName in mdlNames_WM :
         postOp.save()
         postOp.close()
         epoch += 1
+
+    preOp.save()
+    preOp.close()

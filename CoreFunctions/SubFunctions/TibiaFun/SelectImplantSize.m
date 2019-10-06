@@ -8,8 +8,8 @@ bone_margin = bone_margin/100;
 
 switch Prosth_Type
     case 1
-        Type = {'S4','S5','S6'};
-        Widths = [66.25 47; 75 47;75 61];
+        Type = {'S3', 'S4', 'S5', 'S6'};
+        Widths = [66.25 42 ;66.25 47; 75 47;75 61];
         Thickness = 4;
     case 2
         Type = {'S4','S5','S6','S7'};
@@ -58,9 +58,12 @@ end
     
 
 
-if nargin == 7
+if reduceSize == 1
     warning(strcat('Implant size have been reduced: old size :',char(Type(k))));
     k=k-1;
+    if k==0
+        warning('The implant size should have been reduced but, we do not currently have the inferior size')
+    end
     k=max(1,k);
     warning(strcat('Implant size have been reduced: new size :',char(Type(k))));
 end

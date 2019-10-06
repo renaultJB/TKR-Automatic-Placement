@@ -97,16 +97,16 @@ def M_y_from_MFR(Fz,case,data,Pt1,Pt2,U):
     Pt1Pt2 = np.array(Pt1)-np.array(Pt2)
     d = np.dot(U,Pt1Pt2)
     d = abs(d)
+    Fz = abs(Fz)
     #d2 = ((Pt1[0]-Pt2[0])**2+(Pt1[1]-Pt2[1])**2+(Pt1[2]-Pt2[2])**2)
     #d = d2**0.5
     # Get HKA preOp or Post Op depending on alignement
     if case == 'Mech' :
         HKA = data['alpha']
     elif case == 'Kine' :
-        HKA = data['alpha'] + 3 # Physio MMPTA = 87°
+        HKA = data['alpha'] + 2 # Physio MMPTA = 88°
     elif case == 'PreOp' : 
-        HKA = 87 - data['mMPTA'] # Physio MMPTA = 87°
-        
+        HKA = 88 - data['mMPTA'] # Physio MMPTA = 88°
     # Linear regression obtained from gait cycles  
     M_y = (0.053*HKA-0.374)*Fz*d/2.
     return M_y

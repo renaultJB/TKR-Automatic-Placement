@@ -3,8 +3,9 @@ gmsh/
 Notes/
 testData/
 tempFiles/
-output/*/
 Output/*/
+!Output/Analysis
+Output/Analysis/.R*
 *.msh
 *.stp
 *.step
@@ -24,7 +25,7 @@ Output/*/
 Dict_*.txt
 output_*.txt
 Output_*.txt
-Centrality_*.txt
+Output/Out*Centrality.txt
 Dict_*.txt
 BoneMat*.txt
 *Euromech*.py

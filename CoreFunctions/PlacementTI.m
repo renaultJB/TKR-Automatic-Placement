@@ -35,7 +35,7 @@ if nargin == 4
     beta = 7;
 end
 Zoffset_tp = 10; % offset of the tibial plateau plan to calculate dimension
-ResectionOffset = 2.25 ;
+ResectionOffset = 3. ; % 2mm + 1mm saw blade thickness
 CmtThickness = 0.;
 PhysioTTAangle = 12.5;
 
@@ -179,7 +179,7 @@ Boundary_pm_inRt = transpose(CS.V'*Curve_pm(1).Pts');
 
 % Get boundary above the cutting plan
 ellipse_t = fit_ellipse( Boundary_pm_inRt(:,1), ...
-                Boundary_pm_inRt(:,2));
+    Boundary_pm_inRt(:,2));
 GS_inRt = mean(ellipse_t.data,2);
 
 GS = CS.V*[GS_inRt(1);GS_inRt(2);mean(Boundary_pm_inRt(:,3))];
@@ -205,126 +205,138 @@ theta_MTTTA = mod(180 + LegSide*theta_MTTTA , 180);
 % here the origin on CAO is located on the superior surface on the middle of the posterior edge
 
 %% Switch between specifities of implants
-switch implantType
-    case {'Nexgen','nexgen',1}
-        prosth_type = 1;
-        [ Prosthesis0, StemTip, Thickness , ProstName ] = ...
-            SelectImplantSize(RootDir, ML_Width_xp, AP_Width_xp, prosth_type, LongStem );
-        
-        %         TI_speTransfo = [0 LegSide 0 ; 1 0 0; 0 0 -1]; % [0 LegSide 0 ; LegSide 0 0; 0 0 -1]
-        TI_speTransfo = [0 LegSide 0 ; LegSide 0 0; 0 0 -1] ;
-        % Normal at stem Tip plan
-        Nst_0 = [0; sind(4.5); -cosd(4.5)];
-    case {'Persona','persona',3}
-        prosth_type = 3;
-        [ Prosthesis0, StemTip, Thickness , ProstName ] = ...
-            SelectImplantSize(RootDir, ML_Width_xp, AP_Width_xp, prosth_type, LongStem, LegSideName );
-        
-        TI_speTransfo = [0 -LegSide 0 ; LegSide 0 0; 0 0 1];
-        
-        
-    case {'GC6','GrandChallenge','GC',4}
-        prosth_type = 4;
-        [ Prosthesis0, StemTip, Thickness , ProstName ] = ...
-            SelectImplantSize(RootDir, ML_Width_xp, AP_Width_xp, prosth_type, LongStem, LegSideName );
-        
-        TI_speTransfo = [LegSide 0 0 ; 0 LegSide 0 ; 0 0 1];
-        
-        
-    otherwise
-        warning('Type of implants not implemented wet')
-end
-
-
-StemTip = StemTip*TI_speTransfo';
-Prosthesis = triangulation(Prosthesis0.ConnectivityList,...
-    transpose(TI_speTransfo*Prosthesis0.Points'));
-
-Start_Point = Oxp + (Thickness+CmtThickness)*Nxp';
-
-% Move Stem Tip in CT Coordinate frame
-StemTip_CT = R_xp*StemTip' + Start_Point';
-
-CurveStemTip = TriPlanIntersect(ProxTib,Nxp,StemTip_CT);
-BoundaryStemTip = CurveStemTip(1).Pts;
-
-% Center of bone at Stem Tip :
-CDiaphysisStemTip_CT = PlanPolygonCentroid3D(BoundaryStemTip); 
-
-%% Optimization of the implant position in the resection plan coordinate system
-Boundary_xp_inRxp = transpose(R_xp'*bsxfun(@minus,Boundary_xp,Oxp)');
-Boundary_xp_inRxp = Boundary_xp_inRxp(1:8:end-1,:); % Reduce Boundary Matriw weight
-CDiaphysisStemTip = transpose(R_xp'*(CDiaphysisStemTip_CT-Oxp)');
-PtMiddleOfTT_inRxp = transpose(R_xp'*(PtMiddleOfTT-Oxp)');
-
-CurvesProsthesisTP = TriPlanIntersect(Prosthesis,[10^-6; 10^-6; 1],2.5); %10^-6 to avoid numerical error
-
-if length(CurvesProsthesisTP) > 1
-    AreaMax=0;
-    for i = 1 : length(CurvesProsthesisTP)
-        A = polyarea(CurvesProsthesisTP(i).Pts(:,1),CurvesProsthesisTP(i).Pts(:,2));
-        if A > AreaMax
-            AreaMax = A;
-            iMax = i;
-        end
+exitflag = -1000 ;
+reduceSize = 0 ;
+tries = 0 ;
+while exitflag < -1 && tries < 3
+    switch implantType
+        case {'Nexgen','nexgen',1}
+            prosth_type = 1;
+            [ Prosthesis0, StemTip, Thickness , ProstName ] = ...
+                SelectImplantSize(RootDir, ML_Width_xp, AP_Width_xp, prosth_type, LongStem, LegSideName, reduceSize  );
+            
+            %         TI_speTransfo = [0 LegSide 0 ; 1 0 0; 0 0 -1]; % [0 LegSide 0 ; LegSide 0 0; 0 0 -1]
+            TI_speTransfo = [0 LegSide 0 ; LegSide 0 0; 0 0 -1] ;
+            % Normal at stem Tip plan
+            Nst_0 = [0; sind(4.5); -cosd(4.5)];
+        case {'Persona','persona',3}
+            prosth_type = 3;
+            [ Prosthesis0, StemTip, Thickness , ProstName ] = ...
+                SelectImplantSize(RootDir, ML_Width_xp, AP_Width_xp, prosth_type, LongStem, LegSideName, reduceSize );
+            
+            TI_speTransfo = [0 -LegSide 0 ; LegSide 0 0; 0 0 1];
+            
+            
+        case {'GC6','GrandChallenge','GC',4}
+            prosth_type = 4;
+            [ Prosthesis0, StemTip, Thickness , ProstName ] = ...
+                SelectImplantSize(RootDir, ML_Width_xp, AP_Width_xp, prosth_type, LongStem, LegSideName, reduceSize );
+            
+            TI_speTransfo = [LegSide 0 0 ; 0 LegSide 0 ; 0 0 1];
+            
+            
+        otherwise
+            warning('Type of implants not implemented wet')
     end
-    CurvesProsthesisTP = CurvesProsthesisTP(iMax);
-end
-
-CurvesProsthesisTP.Pts = bsxfun(@plus,CurvesProsthesisTP.Pts, [0,0,2.5]);
-
-
-
-figure(50)
-trisurf(Prosthesis)
-hold on
-pl3t(CurvesProsthesisTP.Pts,'r*-')
-
-% Simplify Implant 
-Boundary_ProsthesisTP = [CurvesProsthesisTP.Pts(1:6:end-1,:) ; CurvesProsthesisTP.Pts(end,:)];
-
-
-figure(51)
-pl3t(CurvesProsthesisTP.Pts,'r-')
-axis equal
-hold on
-pl3t(Boundary_xp_inRxp,'g-')
-plotDot([0,0,0],'r',0.5)
-plotDot(PtMiddleOfTT_inRxp,'g',0.5)
-
-%% Optimization of the placement of the prosthesis
+    
+    
+    StemTip = StemTip*TI_speTransfo';
+    Prosthesis = triangulation(Prosthesis0.ConnectivityList,...
+        transpose(TI_speTransfo*Prosthesis0.Points'));
+    
+    Start_Point = Oxp + (Thickness+CmtThickness)*Nxp';
+    
+    % Move Stem Tip in CT Coordinate frame
+    StemTip_CT = R_xp*StemTip' + Start_Point';
+    
+    CurveStemTip = TriPlanIntersect(ProxTib,Nxp,StemTip_CT);
+    BoundaryStemTip = CurveStemTip(1).Pts;
+    
+    % Center of bone at Stem Tip :
+    CDiaphysisStemTip_CT = PlanPolygonCentroid3D(BoundaryStemTip);
+    
+    %% Optimization of the implant position in the resection plan coordinate system
+    Boundary_xp_inRxp = transpose(R_xp'*bsxfun(@minus,Boundary_xp,Oxp)');
+    Boundary_xp_inRxp = Boundary_xp_inRxp(1:8:end-1,:); % Reduce Boundary Matriw weight
+    CDiaphysisStemTip = transpose(R_xp'*(CDiaphysisStemTip_CT-Oxp)');
+    PtMiddleOfTT_inRxp = transpose(R_xp'*(PtMiddleOfTT-Oxp)');
+    
+    CurvesProsthesisTP = TriPlanIntersect(Prosthesis,[10^-6; 10^-6; 1],2.5); %10^-6 to avoid numerical error
+    
+    if length(CurvesProsthesisTP) > 1
+        AreaMax=0;
+        for i = 1 : length(CurvesProsthesisTP)
+            A = polyarea(CurvesProsthesisTP(i).Pts(:,1),CurvesProsthesisTP(i).Pts(:,2));
+            if A > AreaMax
+                AreaMax = A;
+                iMax = i;
+            end
+        end
+        CurvesProsthesisTP = CurvesProsthesisTP(iMax);
+    end
+    
+    CurvesProsthesisTP.Pts = bsxfun(@plus,CurvesProsthesisTP.Pts, [0,0,2.5]);
+    
+    
+    %
+    % figure(50)
+    % trisurf(Prosthesis)
+    % hold on
+    % pl3t(CurvesProsthesisTP.Pts,'r*-')
+    
+    % Simplify Implant
+    Boundary_ProsthesisTP = [CurvesProsthesisTP.Pts(1:6:end-1,:) ; CurvesProsthesisTP.Pts(end,:)];
+    
+    
+    % figure(51)
+    % pl3t(CurvesProsthesisTP.Pts,'r-')
+    % axis equal
+    % hold on
+    % pl3t(Boundary_xp_inRxp,'g-')
+    % plotDot([0,0,0],'r',0.5)
+    % plotDot(PtMiddleOfTT_inRxp,'g',0.5)
+    
+    %% Optimization of the placement of the prosthesis
     % Limit overhang
     % Orient prosthesis toward the tibial tuberosity
     % Orient prosthesis in the CS.X axis
     % if long stem, ensure that the stem tip is centered relative to the
     % diaphysis
+    
+    
+    % Geometric optimization problem
+    lb = [-30,-20,-20];
+    ub = [30,20,20];
+    A = [1,1,0;-1,-1,0;];
+    b = [100,100];
+    Aeq = [];
+    beq = [];
+    x0 = [0,0,0];
+    
+    
+    % initial value guess
+    O_it0 = PlanPolygonCentroid3D(Boundary_ProsthesisTP);
+    x0(1) = - O_it0(1);
+    x0(2) = - O_it0(2);
+    x0(3) = theta_TTA - 18 - 90;
+    x0(3) = 0;
+    
+    % figure(10)
+    % pl3t(Boundary_xp_inRxp,'k-')
+    % hold on
+    % axis equal
+    % pl3t(Boundary_ProsthesisTP,'r-')
+    
+    [ x,fval,exitflag,output,history ] = optimC_PlacementTI_xp( x0, A,b,Aeq,beq,lb,ub, Boundary_xp_inRxp, Boundary_ProsthesisTP , CS, R_xp, theta_TTA );
+    % [ x,fval,history ] = optimUC_PlacementTI_xp( x0, Boundary_xp_inRxp, Boundary_ProsthesisTP , CS, R_xp, theta_TTA );
+    
+    if exitflag < -1 
+        reduceSize = 1 ;
+    end
+    tries = tries + 1 ;
+    
+end
 
-     
-% Geometric optimization problem
-lb = [-30,-20,-20];
-ub = [30,20,20];  
-A = [1,1,0;-1,-1,0;];
-b = [100,100];
-Aeq = [];
-beq = [];
-x0 = [0,0,0]; 
-
-
-% initial value guess
-O_it0 = PlanPolygonCentroid3D(Boundary_ProsthesisTP); 
-x0(1) = - O_it0(1);
-x0(2) = - O_it0(2);
-x0(3) = theta_TTA - 18 - 90;
-x0(3) = 0;
-
-figure(10)
-pl3t(Boundary_xp_inRxp,'k-')
-hold on
-axis equal
-pl3t(Boundary_ProsthesisTP,'r-')
-
-[ x,fval,history ] = optimC_PlacementTI_xp( x0, A,b,Aeq,beq,lb,ub, Boundary_xp_inRxp, Boundary_ProsthesisTP , CS, R_xp, theta_TTA );   
-% [ x,fval,history ] = optimUC_PlacementTI_xp( x0, Boundary_xp_inRxp, Boundary_ProsthesisTP , CS, R_xp, theta_TTA );
 
 ProthOrig = Start_Point + x(1)*U_xp' + x(2)*V_xp';
 Rp = rot(Nxp,x(3));

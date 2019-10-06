@@ -27,7 +27,9 @@ partName = 'TIBIA-1'
 nCPUs = 8
 rmdl_T = 0.40
 dt = 1./2.
-law = 'Morgan2003' # Rho to E law used in the models
+rmdl_Bone_on = True
+rmdl_TBCMT_on = True
+law = 'Carter77' # or 'Morgan2003' # Rho to E law used in the models
 #-----------------------------------------------------------------
 import section
 import regionToolset
@@ -157,177 +159,177 @@ for mdlName in mdlNames_WM :
         #               Remodelling of the tibia bulk volume
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #-----------------------------------------------------------------
+        if rmdl_Bone_on : 
+            # -----------------------------------------------------------
+            # Dictionnary of elements and associated elastic modulus
+            #------------------------------------------------------------
+            # READ original INP file
+            inpText = rmdl_funs.get_inp_text(name_curr)
 
-        # -----------------------------------------------------------
-        # Dictionnary of elements and associated elastic modulus
-        #------------------------------------------------------------
-        # READ original INP file
-        inpText = rmdl_funs.get_inp_text(name_curr)
-
-        #Find Mat Ppties with regex
-        Dict_Mat_E = rmdl_funs.get_Mat_From_inp(inpText,matKeyword)
-        
-        #FindElset with regex
-        dict_Elset = rmdl_funs.get_ES_From_inp(inpText,elSetKeyword)
-        ElementList = sorted([ el for k in dict_Elset.keys() for el in dict_Elset[k]])
-
-        # FindSection : Assocition between ElSet and Materials
-        dict_ELset_E, dict_Mat_Elset = rmdl_funs.get_ES2MAT_From_inp(inpText,matKeyword,elSetKeyword,Dict_Mat_E)
-        dict_E_Elset = { dict_ELset_E[elset] : elset for elset in dict_ELset_E} # Invert dict
-
-        # Get elements elastic modulus correspondance : 
-        dict_El_E = dict()
-        for k in dict_ELset_E.keys():
-            for el in dict_Elset[k] :
-                dict_El_E[el] = dict_ELset_E[k]
-
-
-        # -----------------------------------------------------------
-        # Get the values of the signal S
-        #------------------------------------------------------------
-        postOp = session.openOdb(name= name_curr + '.odb', readOnly=FALSE)
-        TibRA = postOp.rootAssembly.instances['TIBIA-1']
-        TibRA_ES_ALL = TibRA.elementSets['ES-2RMDL']
-        TibRA_ES_TBCMT = TibRA.elementSets['ES-LAYER-ALL']
-
-
-        # Get SEMD for each steps
-        Dict_S = {el.label : [] for el in TibRA_ES_ALL.elements}
-        for stepName in postOp.steps.keys() :
-            preOp_SED = preOp.steps[stepName].frames[-1].fieldOutputs['ESEDEN']
-            SED_preOp =  preOp_SED.getSubset(region=TibRA_preOp_ES_All)
-            preOp_Sref = preOp.steps[stepName].frames[-1].fieldOutputs['Sref']
-            SREF =  preOp_Sref.getSubset(region=TibRA_preOp_ES_All)
-            #
-            postOp_SED = postOp.steps[stepName].frames[-1].fieldOutputs['ESEDEN']
-            SED =  postOp_SED.getSubset(region=TibRA_ES_ALL)
-            #
-            #postOp_Sref = postOp.steps[stepName].frames[-1].fieldOutputs['Sref']
-            #Sref =  postOp_Sref.getSubset(region=TibRA_ES_ALL)
+            #Find Mat Ppties with regex
+            Dict_Mat_E = rmdl_funs.get_Mat_From_inp(inpText,matKeyword)
             
-            # Compute Strain Energy Density Shielding field for the current model relative to the préop situation
-            SEMD = postOp.steps[stepName].frames[-1].FieldOutput(name='SEMD',
-                                description='Strain Energy Massic Density', type=SCALAR)
-            SEDSField = postOp.steps[stepName].frames[-1].FieldOutput(name='SEDSh',
-                                description='SED Shielding', type=SCALAR)
-            SEMDsh = postOp.steps[stepName].frames[-1].FieldOutput(name='SEMDsh',
-                                description='Strain Energy Massic Density shielding', type=SCALAR)
-            RHO = postOp.steps[stepName].frames[-1].FieldOutput(name='rho',
-                                description='Apparent Density of TB', type=SCALAR)
-            E_MOD = postOp.steps[stepName].frames[-1].FieldOutput(name='E_Mod',
-                                description='Elastic Modulus of material', type=SCALAR)
-            Data_S = []
-            Data_deltaS = []
-            Data_SEDsh = []
-            Data_Rho = []
-            Data_E_Mod = []
-            elmtData = []
-            for i, val in enumerate(SED.values) :
-                E = dict_El_E[val.elementLabel]
-                rho = rmdl_funs.rho_from_E(E,law)
-                Data_Rho.append((rho,))
-                Data_E_Mod.append((E,))
-                
-                S = val.data/rho
-                Data_S.append((S,))
-                Dict_S[val.elementLabel].append(S)
-                
-                sedSh = [val.data - SED_preOp.values[i].data]
-                Data_SEDsh.append(tuple(sedSh))
-                
-                deltaS = [S - SREF.values[i].data]
-                Data_deltaS.append(tuple(deltaS))
-                       
-                elmtData.append(val.elementLabel)
-                
-            # Write new fields
-            SEMD.addData(position=WHOLE_ELEMENT, instance=TibRA,
-                labels=elmtData, data=Data_S)
-            SEDSField.addData(position=WHOLE_ELEMENT, instance=TibRA,
-                labels=elmtData, data=Data_SEDsh)
-            SEMDsh.addData(position=WHOLE_ELEMENT, instance=TibRA,
-                labels=elmtData, data=Data_deltaS)
-            RHO.addData(position=WHOLE_ELEMENT, instance=TibRA, labels=elmtData, data=Data_Rho)
-            E_MOD.addData(position=WHOLE_ELEMENT, instance=TibRA, labels=elmtData, data=Data_E_Mod)
-        # Get the equivalent strain enery density 1st strategy : Mean diff
-        S_Equi = { el : np.mean(s) for el, s in Dict_S.items() }
-        
+            #FindElset with regex
+            dict_Elset = rmdl_funs.get_ES_From_inp(inpText,elSetKeyword)
+            ElementList = sorted([ el for k in dict_Elset.keys() for el in dict_Elset[k]])
 
-        # -----------------------------------------------------------
-        # Get the new value of the elastic modulus
-        #------------------------------------------------------------
-        dict_El_E_Rmdl = dict()
-        dict_Elset_Rmdl = {k: [] for k in dict_Elset.keys()}
+            # FindSection : Assocition between ElSet and Materials
+            dict_ELset_E, dict_Mat_Elset = rmdl_funs.get_ES2MAT_From_inp(inpText,matKeyword,elSetKeyword,Dict_Mat_E)
+            dict_E_Elset = { dict_ELset_E[elset] : elset for elset in dict_ELset_E} # Invert dict
 
-        for el in dict_El_E:
-            dict_El_E_Rmdl[el] = rmdl_funs.bone_remodeling(dict_El_E[el], S_Equi[el], Sref_Equi[el], dt, law)
-            E_closest = rmdl_funs.find_nearest_E_group(sorted(dict_E_Elset.keys()),dict_El_E_Rmdl[el])
-            dict_Elset_Rmdl[dict_E_Elset[E_closest]].append(el)
+            # Get elements elastic modulus correspondance : 
+            dict_El_E = dict()
+            for k in dict_ELset_E.keys():
+                for el in dict_Elset[k] :
+                    dict_El_E[el] = dict_ELset_E[k]
+
+
+            # -----------------------------------------------------------
+            # Get the values of the signal S
+            #------------------------------------------------------------
+            postOp = session.openOdb(name= name_curr + '.odb', readOnly=FALSE)
+            TibRA = postOp.rootAssembly.instances['TIBIA-1']
+            TibRA_ES_ALL = TibRA.elementSets['ES-2RMDL']
+            TibRA_ES_TBCMT = TibRA.elementSets['ES-LAYER-ALL']
+
+
+            # Get SEMD for each steps
+            Dict_S = {el.label : [] for el in TibRA_ES_ALL.elements}
+            for stepName in postOp.steps.keys() :
+                preOp_SED = preOp.steps[stepName].frames[-1].fieldOutputs['ESEDEN']
+                SED_preOp =  preOp_SED.getSubset(region=TibRA_preOp_ES_All)
+                preOp_Sref = preOp.steps[stepName].frames[-1].fieldOutputs['Sref']
+                SREF =  preOp_Sref.getSubset(region=TibRA_preOp_ES_All)
+                #
+                postOp_SED = postOp.steps[stepName].frames[-1].fieldOutputs['ESEDEN']
+                SED =  postOp_SED.getSubset(region=TibRA_ES_ALL)
+                #
+                #postOp_Sref = postOp.steps[stepName].frames[-1].fieldOutputs['Sref']
+                #Sref =  postOp_Sref.getSubset(region=TibRA_ES_ALL)
+                
+                # Compute Strain Energy Density Shielding field for the current model relative to the préop situation
+                SEMD = postOp.steps[stepName].frames[-1].FieldOutput(name='SEMD',
+                                    description='Strain Energy Massic Density', type=SCALAR)
+                SEDSField = postOp.steps[stepName].frames[-1].FieldOutput(name='SEDSh',
+                                    description='SED Shielding', type=SCALAR)
+                SEMDsh = postOp.steps[stepName].frames[-1].FieldOutput(name='SEMDsh',
+                                    description='Strain Energy Massic Density shielding', type=SCALAR)
+                RHO = postOp.steps[stepName].frames[-1].FieldOutput(name='rho',
+                                    description='Apparent Density of TB', type=SCALAR)
+                E_MOD = postOp.steps[stepName].frames[-1].FieldOutput(name='E_Mod',
+                                    description='Elastic Modulus of material', type=SCALAR)
+                Data_S = []
+                Data_deltaS = []
+                Data_SEDsh = []
+                Data_Rho = []
+                Data_E_Mod = []
+                elmtData = []
+                for i, val in enumerate(SED.values) :
+                    E = dict_El_E[val.elementLabel]
+                    rho = rmdl_funs.rho_from_E(E,law)
+                    Data_Rho.append((rho,))
+                    Data_E_Mod.append((E,))
+                    
+                    S = val.data/rho
+                    Data_S.append((S,))
+                    Dict_S[val.elementLabel].append(S)
+                    
+                    sedSh = [val.data - SED_preOp.values[i].data]
+                    Data_SEDsh.append(tuple(sedSh))
+                    
+                    deltaS = [S - SREF.values[i].data]
+                    Data_deltaS.append(tuple(deltaS))
+                           
+                    elmtData.append(val.elementLabel)
+                    
+                # Write new fields
+                SEMD.addData(position=WHOLE_ELEMENT, instance=TibRA,
+                    labels=elmtData, data=Data_S)
+                SEDSField.addData(position=WHOLE_ELEMENT, instance=TibRA,
+                    labels=elmtData, data=Data_SEDsh)
+                SEMDsh.addData(position=WHOLE_ELEMENT, instance=TibRA,
+                    labels=elmtData, data=Data_deltaS)
+                RHO.addData(position=WHOLE_ELEMENT, instance=TibRA, labels=elmtData, data=Data_Rho)
+                E_MOD.addData(position=WHOLE_ELEMENT, instance=TibRA, labels=elmtData, data=Data_E_Mod)
+            # Get the equivalent strain enery density 1st strategy : Mean diff
+            S_Equi = { el : np.mean(s) for el, s in Dict_S.items() }
+            
+
+            # -----------------------------------------------------------
+            # Get the new value of the elastic modulus
+            #------------------------------------------------------------
+            dict_El_E_Rmdl = dict()
+            dict_Elset_Rmdl = {k: [] for k in dict_Elset.keys()}
+
+            for el in dict_El_E:
+                dict_El_E_Rmdl[el] = rmdl_funs.bone_remodeling(dict_El_E[el], S_Equi[el], Sref_Equi[el], dt, law)
+                E_closest = rmdl_funs.find_nearest_E_group(sorted(dict_E_Elset.keys()),dict_El_E_Rmdl[el])
+                dict_Elset_Rmdl[dict_E_Elset[E_closest]].append(el)
                 
         #-----------------------------------------------------------------
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Remodelling of the Trabecular bone interdifitated in the cement
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #-----------------------------------------------------------------
-        # Get SvM for each steps
-        TBCMT_El_SvM = {el.label : [] for el in TibRA_ES_TBCMT.elements}
-        for stepName in postOp.steps.keys() :
-            postOp_SvM = postOp.steps[stepName].frames[-1].fieldOutputs['MISESONLY']
-            SvM =  postOp_SvM.getSubset(region=TibRA_ES_TBCMT)
-            for i, val in enumerate(SvM.values) :
-                TBCMT_El_SvM[val.elementLabel].append(val.data)
-        # Get the equivalent von Mises Stress 1st strategy : Mean diff
-        TBCMT_El_MaxSvM = { el : np.mean(SvMList) for el, SvMList in TBCMT_El_SvM.items() }
-        TBCMT_El_SvM = TBCMT_El_MaxSvM
-        
-        # -----------------------------------------------------------
-        # Dictionnary of elements and associated elastic modulus
-        #-----------------------------------------------------------------
-        # READ original INP file
-        inpText = rmdl_funs.get_inp_text(name_curr)
-        
-        #Find Mat Ppties with regex
-        TBCMT_Mat_E = rmdl_funs.get_Mat_From_inp(inpText,'TB-PMMA')
+        if rmdl_TBCMT_on :
+            # Get SvM for each steps
+            TBCMT_El_SvM = {el.label : [] for el in TibRA_ES_TBCMT.elements}
+            for stepName in postOp.steps.keys() :
+                postOp_SvM = postOp.steps[stepName].frames[-1].fieldOutputs['MISESONLY']
+                SvM =  postOp_SvM.getSubset(region=TibRA_ES_TBCMT)
+                for i, val in enumerate(SvM.values) :
+                    TBCMT_El_SvM[val.elementLabel].append(val.data)
+            # Get the equivalent von Mises Stress 1st strategy : Mean diff
+            TBCMT_El_MaxSvM = { el : np.mean(SvMList) for el, SvMList in TBCMT_El_SvM.items() }
+            TBCMT_El_SvM = TBCMT_El_MaxSvM
+            
+            # -----------------------------------------------------------
+            # Dictionnary of elements and associated elastic modulus
+            #-----------------------------------------------------------------
+            # READ original INP file
+            inpText = rmdl_funs.get_inp_text(name_curr)
+            
+            #Find Mat Ppties with regex
+            TBCMT_Mat_E = rmdl_funs.get_Mat_From_inp(inpText,'TB-PMMA')
 
-        #FindElset with regex
-        TBCMT_Elset = rmdl_funs.get_ES_From_inp(inpText,'SECT_TB-PMMA')
+            #FindElset with regex
+            TBCMT_Elset = rmdl_funs.get_ES_From_inp(inpText,'SECT_TB-PMMA')
 
-        # FindSection : Assocition between ElSet and Materials
-        TBCMT_ELset_E, TBCMT_Mat_Elset = rmdl_funs.get_ES2MAT_From_inp(inpText,'TB-PMMA','SECT_TB-PMMA',TBCMT_Mat_E)
-        TBCMT_E_Elset = { TBCMT_ELset_E[elset] : elset for elset in TBCMT_ELset_E} # Invert dict
+            # FindSection : Assocition between ElSet and Materials
+            TBCMT_ELset_E, TBCMT_Mat_Elset = rmdl_funs.get_ES2MAT_From_inp(inpText,'TB-PMMA','SECT_TB-PMMA',TBCMT_Mat_E)
+            TBCMT_E_Elset = { TBCMT_ELset_E[elset] : elset for elset in TBCMT_ELset_E} # Invert dict
 
-        # Get elements elastic modulus correspondance :
-        TBCMT_El_E = dict()
-        for k in TBCMT_ELset_E.keys():
-            for el in TBCMT_Elset[k] :
-                TBCMT_El_E[el] = TBCMT_ELset_E[k]
+            # Get elements elastic modulus correspondance :
+            TBCMT_El_E = dict()
+            for k in TBCMT_ELset_E.keys():
+                for el in TBCMT_Elset[k] :
+                    TBCMT_El_E[el] = TBCMT_ELset_E[k]
 
-        # Get knew value of elastic modulus
-        TBCMT_El_E_Rmdl = dict()
-        TBCMT_Elset_Rmdl = {k: [] for k in TBCMT_Elset.keys()}
+            # Get knew value of elastic modulus
+            TBCMT_El_E_Rmdl = dict()
+            TBCMT_Elset_Rmdl = {k: [] for k in TBCMT_Elset.keys()}
 
-        
-        for el in TBCMT_El_E:
-            TBCMT_El_E_Rmdl[el] = rmdl_funs.tbcmt_remodeling(TBCMT_El_E[el],TBCMT_El_SvM[el],dt)
-            E_closest = rmdl_funs.find_nearest_E_group(sorted(TBCMT_E_Elset.keys()),TBCMT_El_E_Rmdl[el])
-            TBCMT_Elset_Rmdl[TBCMT_E_Elset[E_closest]].append(el)
+            
+            for el in TBCMT_El_E:
+                TBCMT_El_E_Rmdl[el] = rmdl_funs.tbcmt_remodeling(TBCMT_El_E[el],TBCMT_El_SvM[el],dt)
+                E_closest = rmdl_funs.find_nearest_E_group(sorted(TBCMT_E_Elset.keys()),TBCMT_El_E_Rmdl[el])
+                TBCMT_Elset_Rmdl[TBCMT_E_Elset[E_closest]].append(el)
 
 
 
-        for stepName in postOp.steps.keys() :
-            Data_E_Mod = []
-            elmtData = []
-            if 'E_Mod' not in postOp.steps[stepName].frames[-1].fieldOutputs.keys() :
-                E_Mod = postOp.steps[stepName].frames[-1].FieldOutput(name='E_Mod',
-                                description='Elastic Modulus of material', type=SCALAR)
-            else :
-                E_Mod = postOp.steps[stepName].frames[-1].fieldOutputs['E_Mod']
-                
-            for el, E in TBCMT_El_E.iteritems(): 
-                Data_E_Mod.append((E,))
-                elmtData.append(el)
-                
-            E_MOD.addData(position=WHOLE_ELEMENT, instance=TibRA, labels=elmtData, data=Data_E_Mod)
+            for stepName in postOp.steps.keys() :
+                Data_E_Mod = []
+                elmtData = []
+                if 'E_Mod' not in postOp.steps[stepName].frames[-1].fieldOutputs.keys() :
+                    E_Mod = postOp.steps[stepName].frames[-1].FieldOutput(name='E_Mod',
+                                    description='Elastic Modulus of material', type=SCALAR)
+                else :
+                    E_Mod = postOp.steps[stepName].frames[-1].fieldOutputs['E_Mod']
+                for el, E in TBCMT_El_E.iteritems(): 
+                    Data_E_Mod.append((E,))
+                    elmtData.append(el)
+                    
+                E_MOD.addData(position=WHOLE_ELEMENT, instance=TibRA, labels=elmtData, data=Data_E_Mod)
         
         #-----------------------------------------------------------------
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -347,7 +349,7 @@ for mdlName in mdlNames_WM :
                     elset = pElset2.findall(line,re.I)
                     elset3 = pElset3.findall(line,re.I)
                     fout.write(line)
-                    if elset :
+                    if elset and rmdl_Bone_on:
                         writeLine = False
                         elmts = dict_Elset_Rmdl[elset[0].upper()]
                         if elmts :
@@ -358,7 +360,7 @@ for mdlName in mdlNames_WM :
                                 fout.write(', '.join(c)+'\n')
                         else :
                             fout.write('  \n')
-                    elif elset3 :
+                    elif elset3 and rmdl_TBCMT_on :
                         writeLine = False
                         elmts = TBCMT_Elset_Rmdl[elset3[0].upper()]
                         if elmts :

@@ -363,14 +363,16 @@ def creaPostOpMdl(mdlName,nCPUs) :
     for stepName in steps :
         F_x, F_y, F_z =  list(SelectedForces[stepName]*BW)
         M_x, M_y, M_z =  list(SelectedMoments[stepName]*BW*1000.) #Convert to N.mm
-        #Adapt M_y to HKA:
-        U = R_Implt.axis1.direction
-        M_y = MdlFuns.M_y_from_MFR(F_z,Data['Alignment'],Data,Data['Pt_Med_Implt'],Data['Pt_Lat_Implt'],U)
+
+
+        if 'GC' in stepName :
+            #Adapt M_y to HKA:
+            U = R_Implt.axis1.direction
+            M_y = MdlFuns.M_y_from_MFR(F_z,Data['Alignment'],Data,Data['Pt_Med_Implt'],Data['Pt_Lat_Implt'],U)
 
         F_x, F_y, F_z = [round(F_x,1), round(F_y,1), round(F_z,1)]
         M_x, M_y, M_z = [round(M_x,1), round(M_y,1), round(M_z,1)]
-        # M_x was removed from forces because it is affected by the expression point of the torseur
-        # M_y was updated accroding to the implant frontal alignement
+        # M_x was removed from forces because it is affected by the point of expression of the torseur
         
         if i==0:
             mdl1.ConcentratedForce(name='TKRForces', 

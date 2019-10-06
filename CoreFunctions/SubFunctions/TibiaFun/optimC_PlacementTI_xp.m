@@ -1,4 +1,4 @@
-function [ x,fval,history ] = optimC_PlacementTI_xp( x0, A,b,Aeq,beq,lb,ub, Boundary_xp_inRxp, Boundary_ProsthesisTP , CS, R_xp, theta_TTA )
+function [ x,fval,exitflag,output,history ] = optimC_PlacementTI_xp( x0, A,b,Aeq,beq,lb,ub, Boundary_xp_inRxp, Boundary_ProsthesisTP , CS, R_xp, theta_TTA )
 %Optimisation of the tibial implant placement in the resection face
 %  Try to follow the constrained presented by Berger et al. 1998
 
@@ -12,7 +12,7 @@ history = [];
 f = @(x)AxialRotation(x , CS, R_xp, theta_TTA);
 fcon = @(x)CoverageConstraint(x, Boundary_xp_inRxp, Boundary_ProsthesisTP);
 options = optimoptions(@fmincon,'Algorithm','interior-point','MaxFunctionEvaluations',5000,'OutputFcn', @myoutput);
-[x,fval] = fmincon(f,x0,A,b,Aeq,beq,lb,ub,fcon,options);
+[x,fval,exitflag,output] = fmincon(f,x0,A,b,Aeq,beq,lb,ub,fcon,options);
 
     function stop = myoutput(x,optimvalues,state);
         stop = false;

@@ -57,7 +57,7 @@ NotOkODBFile.close()
 # Open output file and write first line (Header)
 # =============================================================================
 with open('OutputLoadCentrality.txt','w') as fCScore :
-    fCScore.write('{},{},{},{},{}'.format('subjectCode','LegSide','ImplantSize','alpha','beta'))
+    fCScore.write('{},{},{},{},{},{},'.format('subjectCode','LegSide','ImplantSize','Alignement','alpha','beta'))
     fCScore.write('{},{},{},{},{},{},'.format('CV','Min.Max','Min.Mean','mMPTA','TibialSlopeDia','TibialSlopeMech'))
     fCScore.write('{},{},{},{},{},{},{},{},'.format('Lsup','Lflank','Ltip','Ltot','Lshare','LTipCv','LTipStd','LTipMax'))
     fCScore.write('{},{},{},{},{},{},{},'.format('Mean.Distance','Wdth.Implt.ML','Wdth.Implt.AP','Wdth.Tib.ML','Wdth.Tib.AP','Ratio.AP','Ratio.ML'))
@@ -83,7 +83,6 @@ with open('OutputLoadCentrality.txt','w') as fCScore :
         Data = mdl_funs.readData(dictFile)
         # Normal of the implant tibial plateau equivalent to normal of the tibial plateau cut plan
         nxp = Data['Nxp']
-        fCScore.write('{},{},{},{},{},'.format(subjectCodeLR,LegSide,Data['ImpltType'],Data['alpha'],Data['beta']))
         
         # Get Centrality
         with open(mdlFolder + 'Output_' + shortMdlName + '.txt','r') as centralityf:
@@ -107,8 +106,6 @@ with open('OutputLoadCentrality.txt','w') as fCScore :
                     GoodLine = True
                     ScoreName = 'MalRot'
 
-        
-        fCScore.write('{},{},{},{},{},{},'.format(Infos['Ctrly.CV'],Infos['Ctrly.Min_Max'],Infos['Ctrly.Min_Mean'],Data['mMPTA'],Infos['TibSlopeDia'],Data['TPslope']))
         
         with open(mdlFolder + 'Centrality_'+shortMdlName+'.txt','r') as centralityf :
 
@@ -181,12 +178,13 @@ with open('OutputLoadCentrality.txt','w') as fCScore :
                     LoadShare['CV_Forces_Tip'] = LoadShare['STD_Forces_Tip']/np.mean(Forces)
             
         #    Write too output file
+            fCScore.write('{},{},{},{},{},{},'.format(subjectCodeLR,LegSide,Data['ImpltType'],Data['Alignment'],Data['alpha'],Data['beta']))
+            fCScore.write('{},{},{},{},{},{},'.format(Infos['Ctrly.CV'],Infos['Ctrly.Min_Max'],Infos['Ctrly.Min_Mean'],Data['mMPTA'],Infos['TibSlopeDia'],Data['TPslope']))
             for ns in lCtctNSTibia:
                 fCScore.write('{},'.format(LoadShare[ns]))
-            
             fCScore.write('{},'.format(LoadShare['NS-STEM-TIP']/LoadShare['NS-CUT']))
             fCScore.write('{},{},{},'.format(LoadShare['CV_Forces_Tip'],LoadShare['STD_Forces_Tip'],LoadShare['Max_Tip']))
-            fCScore.write('{},{},{},{},{},{},{}'.format(Infos['Mean.Distance'],Infos['Width.Implt.ML'],Infos['Width.Implt.AP'],Infos['Width.Tib.ML'],Infos['Width.Tib.AP'],Infos['Ratio.AP'],Infos['Ratio.ML']))
+            fCScore.write('{},{},{},{},{},{},{},'.format(Infos['Mean.Distance'],Infos['Width.Implt.ML'],Infos['Width.Implt.AP'],Infos['Width.Tib.ML'],Infos['Width.Tib.AP'],Infos['Ratio.AP'],Infos['Ratio.ML']))
             fCScore.write('{},{}\n'.format(stepName,epoch))
     #    Close ODB and go to next file
         MyOdb.close()

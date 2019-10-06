@@ -401,14 +401,16 @@ def creaPreOpMdl(mdlName,nCPUs):
     for stepName in steps :
         F_x, F_y, F_z =  list(SelectedForces[stepName]*BW)
         M_x, M_y, M_z =  list(SelectedMoments[stepName]*BW*1000.) #Convert to N.mm
-        #Adapt M_y to HKA:
-        U = R_TP.axis2.direction
-        M_y = MdlFuns.M_y_from_MFR(F_z,'PreOp',Data,Data['Pt_LCC'],Data['Pt_MCC'],U)
+
+        if 'GC' in stepName :
+            #Adapt M_y to HKA:
+            U = R_TP.axis2.direction
+            M_y = MdlFuns.M_y_from_MFR(F_z,'PreOp',Data,Data['Pt_LCC'],Data['Pt_MCC'],U)
         
         F_x, F_y, F_z = [round(F_x,1), round(F_y,1), round(F_z,1)]
         M_x, M_y, M_z = [round(M_x,1), round(M_y,1), round(M_z,1)]
-        # M_x was removed from forces because it is affected by the expression point of the torseur
-        # M_y was updated accroding to the implant frontal alignement
+        # M_x was removed from forces because it is affected by the point of expression of the torseur
+
         if i==0:
             mdl1.ConcentratedForce(name='TKRForces', 
                 createStepName=stepName, region=GS_RPtOriKnee, cf1=F_x, cf2=LSign*F_y, cf3=F_z, 

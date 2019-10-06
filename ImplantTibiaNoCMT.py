@@ -88,7 +88,8 @@ os.chdir(cwd)
 # [-12.0,-8.0,-4.0,0.0,4.0,8.0,12.0]
 # [-4.5,-1.5,1.5,4.5]
 # [-4.0,-3.0,-2.0,-1.5,-1.0, 4.5]
-for alpha in [-4.5, -3.0, -1.5, 0.0, 1.5, 3.0, 4.5, 100.0] :
+# [-4.5, -3.0, -1.5, 0.0, 1.5, 3.0, 4.5, 100.0]
+for alpha in [0.0, 100.0] :
     os.chdir(cwd+'\\CoreFunctions')
     beta = 7.0
     T, Tanat, ML_Width , AP_Width, ProstName, alphaOut = eng.PlacementTI(SubjectCode,alpha,TypeProth,LongStem,beta,nargout=6)

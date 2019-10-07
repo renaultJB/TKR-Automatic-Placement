@@ -155,7 +155,7 @@ def rho_from_E(E,law='Carter77') :
     
 def rho_to_E(rho,law='Carter77') :
     if law == 'Carter77' :
-        E = 3790.0*rho*3.0
+        E = 3790.0*rho**3.0
     elif law == 'Morgan2003' :
         if rho < 0.572 :
             E = 15520.0*rho**1.93
@@ -164,7 +164,7 @@ def rho_to_E(rho,law='Carter77') :
         else :
             E = 9965.0*rho**1.137
     # Ensure that E is always positive
-    E = max(0.5,E)
+    E = max(1.0,E)
     return E
 
 def bone_remodeling(E, S, Sref, dt, law='Carter77') :
@@ -177,9 +177,9 @@ def bone_remodeling(E, S, Sref, dt, law='Carter77') :
     a = a_rho(rho_i, 'Adams2014') # Specific surface
     
     if S < (1-lz)*Sref :
-        delta_rho =  tau * a * ( S - (1-lz)*Sref )
+        delta_rho =  tau * a * ( S - (1-lz)*Sref ) * dt
     elif  S > (1+lz)*Sref :
-        delta_rho =  tau * a * ( S - (1+lz)*Sref )
+        delta_rho =  tau * a * ( S - (1+lz)*Sref ) * dt
     else :
         delta_rho = 0
 
@@ -195,7 +195,10 @@ def tbcmt_remodeling(E,SvM,dt) :
     from math import exp
     # Fitted parameters
     x = [3.0910 , 0.4648 , 5.5258 , 0.9260 , 2.2579]
-    BVTV = 8.3436e-10*E**2.6133
+    ci = 1.4136
+    bi = 1.0/6639.0
+    # Remodel law
+    BVTV = (bi*E)**ci
     V_rmdl_max = 0.28
     SvM0 = x[0]*BVTV**x[1]
     dSvM = SvM - SvM0;

@@ -17,19 +17,19 @@ import math
 import re
 
 
-os.chdir(r'C:\Users\Doctorant\Documents\JB\Rmdl_Macro\TRO_L')
+os.chdir(r'C:\Users\Doctorant\Documents\GitHub\TKR-Automatic-Placement\Output\INPs_WM')
 # cwd = os.getcwd() + '\\'
 #-----------------------------------------------------------------
 # Parameters
 matKeyword = 'MAT_'
 elSetKeyword = 'SET_'
 partName = 'TIBIA-1'
-nCPUs = 8
+nCPUs = 4
 rmdl_T = 0.40
 dt = 1./2.
 rmdl_Bone_on = True
 rmdl_TBCMT_on = True
-law = 'Carter77' # or 'Morgan2003' # Rho to E law used in the models
+law = 'Carter77' # Carter77 or 'Morgan2003' # Rho to E law used in the models
 #-----------------------------------------------------------------
 import section
 import regionToolset
@@ -111,11 +111,11 @@ for mdlName in mdlNames_WM :
     for stepName in preOp.steps.keys() :
         preOp_SED = preOp.steps[stepName].frames[-1].fieldOutputs['ESEDEN']
         SED_preOp =  preOp_SED.getSubset(region=TibRA_preOp_ES_All)
-        if 'Sref' not in preOp.steps[stepName].frames[-1].fieldOutputs.keys() :
-            SEMD_preOp = preOp.steps[stepName].frames[-1].FieldOutput(name='Sref',
+        if 'SEMDref' not in preOp.steps[stepName].frames[-1].fieldOutputs.keys() :
+            SEMD_preOp = preOp.steps[stepName].frames[-1].FieldOutput(name='SEMDref',
                         description='Strain Energy Massic Density', type=SCALAR)
         else :
-            SEMD_preOp = preOp.steps[stepName].frames[-1].fieldOutputs['Sref']
+            SEMD_preOp = preOp.steps[stepName].frames[-1].fieldOutputs['SEMDref']
 
         if 'rho' not in preOp.steps[stepName].frames[-1].fieldOutputs.keys() :
             RHO_preOp = preOp.steps[stepName].frames[-1].FieldOutput(name='rho',
@@ -141,18 +141,37 @@ for mdlName in mdlNames_WM :
 
     Sref_Equi = { el : np.mean(s) for el, s in Dict_Sref.items() }
 
-    while epoch < 1 :
+    while epoch < 10 :
         name_curr = mdlName_short.replace('.', '_') +'_Op_'+ str(epoch)
         # Check if current epoch post Op analysis has already been executed, launched it otherwise
         if not os.path.isfile(name_curr+'.odb'):
             if not os.path.isfile(name_curr+'.inp') and epoch == 0:
-                creaPostOpFun.creaPostOpMdl(mdlName,nCPUs)
+                creaPostOpFun.creaPostOpMdl(mdlName,nCPUs,law)
                 print('PostOp Inp file of' + name_curr + 'has been created.')
             rmdl_funs.launch_inp(name_curr, nCPUs)
             print('PostOp analysis of' + name_curr + ' has been launched.')
             # Wait for job to be completed -----
             rmdl_funs.check_analysis_completed(name_curr)
         print('Simulation of ' + mdlName + ' epoch ' + str(epoch) + ' done...')
+
+        postOp = session.openOdb(name= name_curr + '.odb', readOnly=FALSE)
+        TibRA = postOp.rootAssembly.instances['TIBIA-1']
+        TibRA_ES_ALL = TibRA.elementSets['ES-2RMDL']
+        TibRA_ES_TBCMT = TibRA.elementSets['ES-LAYER-ALL']
+
+        #Check if epoch already computed
+        
+        if 'SEMD' in postOp.steps[postOp.steps.keys()[0]].frames[-1].fieldOutputs.keys() :
+            name_next = mdlName_short.replace('.', '_') +'_Op_'+ str(epoch+1)
+            if os.path.isfile(name_next+'.inp') :
+                postOp.close()
+                epoch += 1
+                continue
+            else :
+                Fields_Exist = True
+        else :
+            Fields_Exist = False
+
 
         #-----------------------------------------------------------------
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -187,18 +206,12 @@ for mdlName in mdlNames_WM :
             # -----------------------------------------------------------
             # Get the values of the signal S
             #------------------------------------------------------------
-            postOp = session.openOdb(name= name_curr + '.odb', readOnly=FALSE)
-            TibRA = postOp.rootAssembly.instances['TIBIA-1']
-            TibRA_ES_ALL = TibRA.elementSets['ES-2RMDL']
-            TibRA_ES_TBCMT = TibRA.elementSets['ES-LAYER-ALL']
-
-
             # Get SEMD for each steps
             Dict_S = {el.label : [] for el in TibRA_ES_ALL.elements}
             for stepName in postOp.steps.keys() :
                 preOp_SED = preOp.steps[stepName].frames[-1].fieldOutputs['ESEDEN']
                 SED_preOp =  preOp_SED.getSubset(region=TibRA_preOp_ES_All)
-                preOp_Sref = preOp.steps[stepName].frames[-1].fieldOutputs['Sref']
+                preOp_Sref = preOp.steps[stepName].frames[-1].fieldOutputs['SEMDref']
                 SREF =  preOp_Sref.getSubset(region=TibRA_preOp_ES_All)
                 #
                 postOp_SED = postOp.steps[stepName].frames[-1].fieldOutputs['ESEDEN']
@@ -208,16 +221,25 @@ for mdlName in mdlNames_WM :
                 #Sref =  postOp_Sref.getSubset(region=TibRA_ES_ALL)
                 
                 # Compute Strain Energy Density Shielding field for the current model relative to the préop situation
-                SEMD = postOp.steps[stepName].frames[-1].FieldOutput(name='SEMD',
+                if not Fields_Exist :
+                    SEMD = postOp.steps[stepName].frames[-1].FieldOutput(name='SEMD',
                                     description='Strain Energy Massic Density', type=SCALAR)
-                SEDSField = postOp.steps[stepName].frames[-1].FieldOutput(name='SEDSh',
-                                    description='SED Shielding', type=SCALAR)
-                SEMDsh = postOp.steps[stepName].frames[-1].FieldOutput(name='SEMDsh',
-                                    description='Strain Energy Massic Density shielding', type=SCALAR)
-                RHO = postOp.steps[stepName].frames[-1].FieldOutput(name='rho',
-                                    description='Apparent Density of TB', type=SCALAR)
-                E_MOD = postOp.steps[stepName].frames[-1].FieldOutput(name='E_Mod',
-                                    description='Elastic Modulus of material', type=SCALAR)
+                    SEDSField = postOp.steps[stepName].frames[-1].FieldOutput(name='SEDSh',
+                                        description='SED Shielding', type=SCALAR)
+                    SEMDsh = postOp.steps[stepName].frames[-1].FieldOutput(name='SEMDsh',
+                                        description='Strain Energy Massic Density shielding', type=SCALAR)
+                    RHO = postOp.steps[stepName].frames[-1].FieldOutput(name='rho',
+                                        description='Apparent Density of TB', type=SCALAR)
+                    E_MOD = postOp.steps[stepName].frames[-1].FieldOutput(name='E_Mod',
+                                        description='Elastic Modulus of material', type=SCALAR)
+
+                else :
+                    SEMD = postOp.steps[stepName].frames[-1].fieldOutputs['SEMD']
+                    SEDSField = postOp.steps[stepName].frames[-1].fieldOutputs['SEMD']
+                    RHO = postOp.steps[stepName].frames[-1].fieldOutputs['SEMD']
+                    E_MOD = postOp.steps[stepName].frames[-1].fieldOutputs['SEMD']
+                    
+
                 Data_S = []
                 Data_deltaS = []
                 Data_SEDsh = []
@@ -243,14 +265,16 @@ for mdlName in mdlNames_WM :
                     elmtData.append(val.elementLabel)
                     
                 # Write new fields
-                SEMD.addData(position=WHOLE_ELEMENT, instance=TibRA,
-                    labels=elmtData, data=Data_S)
-                SEDSField.addData(position=WHOLE_ELEMENT, instance=TibRA,
-                    labels=elmtData, data=Data_SEDsh)
-                SEMDsh.addData(position=WHOLE_ELEMENT, instance=TibRA,
-                    labels=elmtData, data=Data_deltaS)
-                RHO.addData(position=WHOLE_ELEMENT, instance=TibRA, labels=elmtData, data=Data_Rho)
-                E_MOD.addData(position=WHOLE_ELEMENT, instance=TibRA, labels=elmtData, data=Data_E_Mod)
+                if not Fields_Exist :
+                    SEMD.addData(position=WHOLE_ELEMENT, instance=TibRA,
+                        labels=elmtData, data=Data_S)
+                    SEDSField.addData(position=WHOLE_ELEMENT, instance=TibRA,
+                        labels=elmtData, data=Data_SEDsh)
+                    SEMDsh.addData(position=WHOLE_ELEMENT, instance=TibRA,
+                        labels=elmtData, data=Data_deltaS)
+                    RHO.addData(position=WHOLE_ELEMENT, instance=TibRA, labels=elmtData, data=Data_Rho)
+                    E_MOD.addData(position=WHOLE_ELEMENT, instance=TibRA, labels=elmtData, data=Data_E_Mod)
+
             # Get the equivalent strain enery density 1st strategy : Mean diff
             S_Equi = { el : np.mean(s) for el, s in Dict_S.items() }
             
@@ -318,18 +342,22 @@ for mdlName in mdlNames_WM :
 
 
             for stepName in postOp.steps.keys() :
+                
                 Data_E_Mod = []
                 elmtData = []
-                if 'E_Mod' not in postOp.steps[stepName].frames[-1].fieldOutputs.keys() :
+                
+                if not Fields_Exist :
                     E_Mod = postOp.steps[stepName].frames[-1].FieldOutput(name='E_Mod',
                                     description='Elastic Modulus of material', type=SCALAR)
                 else :
                     E_Mod = postOp.steps[stepName].frames[-1].fieldOutputs['E_Mod']
+                    
                 for el, E in TBCMT_El_E.iteritems(): 
                     Data_E_Mod.append((E,))
                     elmtData.append(el)
                     
-                E_MOD.addData(position=WHOLE_ELEMENT, instance=TibRA, labels=elmtData, data=Data_E_Mod)
+                if not Fields_Exist :
+                    E_MOD.addData(position=WHOLE_ELEMENT, instance=TibRA, labels=elmtData, data=Data_E_Mod)
         
         #-----------------------------------------------------------------
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

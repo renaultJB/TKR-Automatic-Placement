@@ -9,6 +9,8 @@ import numpy as np
 
 def GetLoadBCsFromGaitPCA(scaleFactorSD):
     # Get force
+    # Force Unit N/Kg
+    # Moment Unit N/Kg.m
     # Data are for a right leg
     # Read the PCA results file
     with open('PCA_8GaitLoads.txt','r') as f:
@@ -81,11 +83,13 @@ def GetLoadBCsFromGaitPCA(scaleFactorSD):
     SelectedForces['PCA_Sample'] = str(SampledValueSD[0])
     SelectedMoments['PCA_Sample'] = str(SampledValueSD[0])
 
-    # Forces for stair Up peak 1 and 2 and Chair Up activity in 10xBWs
+    # Forces for stair Up peak 1 and 2 and Chair Up activity in N/Kg
+    # Mass in Kg of each subject is required
     SelectedForces['SU1'] = np.array([1.14, -1.81, -30.37])
     SelectedForces['SU2'] = np.array([-0.15, -2.29, -29.85])
     SelectedForces['CU'] = np.array([0.322, -0.192, -27.48])
 
+    # Moments in N/Kg.Meters
     SelectedMoments['SU1'] = np.array([0.147, -0.23, -0.0073])
     SelectedMoments['SU2'] = np.array([0.182, -0.193, -0.072])
     SelectedMoments['CU'] = np.array([0.12, 0.099, -0.054])
@@ -94,6 +98,7 @@ def GetLoadBCsFromGaitPCA(scaleFactorSD):
 
 def M_y_from_MFR(Fz,case,data,Pt1,Pt2,U):
     # Compute the moment in N.mm induced by the HKA
+    # Assume that all the deformation is localised at the tibia level
     Pt1Pt2 = np.array(Pt1)-np.array(Pt2)
     d = np.dot(U,Pt1Pt2)
     d = abs(d)
@@ -139,7 +144,8 @@ def CreateMaterialsSections(Mdl):
 #   DOI: 10.1002/jbm.b.31044
 
     dict_E_Sect = dict()
-    TB_PMMA_E = [1,10]+range(50,6000,50)
+    TB_PMMA_E = list(np.linspace(1.0, 330., num=250)**1.5)
+    TB_PMMA_E += list(np.linspace(6500., 19000., num=25))
     for i,e in enumerate(TB_PMMA_E):
         Mdl.Material(name='TB-PMMA'+str(i))
         Mdl.materials['TB-PMMA'+str(i)].Elastic(table=((e, 0.3), ))
@@ -149,456 +155,7 @@ def CreateMaterialsSections(Mdl):
     
     return dict_E_Sect
     
-    
-def Mesh_CS_Sets_Surfs_Implant(ImplantPart,ImplantSize) :
-    from abaqus import *
-    from abaqusConstants import FREE,TET,STANDARD,C3D20R,C3D15,C3D10,CARTESIAN,MIDDLE
-    import __main__
-    import section
-    import regionToolset
-    import part
-    import mesh
-    EL_size = 2
-    elemType1 = mesh.ElemType(elemCode=C3D20R, elemLibrary=STANDARD)
-    elemType2 = mesh.ElemType(elemCode=C3D15, elemLibrary=STANDARD)
-    elemType3 = mesh.ElemType(elemCode=C3D10, elemLibrary=STANDARD)
-# =============================================================================
-#   For the Size 4 implants :  
-#     Merge edges that generated bad mesh and mesh the implant, then create a 
-#     Coordinate system on the prosthesis, finally create the surface that would 
-#     be interacting with the cement
-# =============================================================================
-    if ImplantSize == 'S4' :
-        ImplantPart.ignoreEntity(entities=(
-            ImplantPart.vertices.getSequenceFromMask((
-            '[#66ad4000 #60f #30000000 #68 ]', ), ), 
-            ImplantPart.edges.getSequenceFromMask((
-            '[#20040000 #543f183 #0:2 #e80fc150 #1 ]', ), )))
-        ImplantPart.ignoreEntity(entities=(
-            ImplantPart.vertices.getSequenceFromMask((
-            '[#0:2 #20000 ]', ), ), 
-            ImplantPart.edges.getSequenceFromMask((
-            '[#0:3 #800000 ]', ), )))
-        ImplantPart.seedPart(deviationFactor=0.125, 
-            minSizeFactor=0.1, size=EL_size)
-        ImplantPart.setMeshControls(elemShape=TET, regions=
-            ImplantPart.cells.getSequenceFromMask(('[#1 ]', ), ), 
-            technique=FREE)
-        ImplantPart.setElementType(regions=
-                (ImplantPart.cells.getSequenceFromMask(('[#1 ]', ), ), ),
-                elemTypes=(elemType1, elemType2,elemType3))
-        ImplantPart.generateMesh()
-        
-        #Create Surfaces
-        TIE_IC = ImplantPart.Surface(name='TIE_IC', side1Faces=
-            ImplantPart.faces.getSequenceFromMask(('[#e #1ffe ]', ), ))
-        SUP_IC = ImplantPart.Surface(name='SUP_IC', side1Faces=
-            ImplantPart.faces.getSequenceFromMask(('[#0 #800 ]', ), ))
-        FLANK_IC = ImplantPart.Surface(name='FLANK_IC', side1Faces=
-            ImplantPart.faces.getSequenceFromMask(('[#8 #17a0 ]', ), ))
-        TIP_IC = ImplantPart.Surface(name='TIP_IC', side1Faces=
-            ImplantPart.faces.getSequenceFromMask(('[#6 #5e ]', ), ))
-        
-        
-        # Create Points
-        PtYNeg = ImplantPart.DatumPointByMidPoint(point1=
-            ImplantPart.vertices[44], point2=
-            ImplantPart.vertices[20])
-        
-        PtYPos = ImplantPart.DatumPointByMidPoint(point1=
-            ImplantPart.vertices[45], point2=
-            ImplantPart.vertices[34])
-        
-        
-        PtMiddleImplant = ImplantPart.DatumPointByMidPoint(point1=
-            ImplantPart.datums[PtYPos.id], point2=
-            ImplantPart.datums[PtYNeg.id])
-        
-        # Create Csys
-        CSysImplant = ImplantPart.DatumCsysByThreePoints(coordSysType=CARTESIAN
-            , name='CSysImplant', origin=ImplantPart.datums[PtMiddleImplant.id], 
-            point1=ImplantPart.InterestingPoint(
-            ImplantPart.edges[45], MIDDLE), point2=
-            ImplantPart.datums[PtYPos.id])
-            
-            
-# =============================================================================
-#     Do the same for the Size 5 implants
-# =============================================================================
-    
-    elif ImplantSize == 'S5' :
-        ImplantPart.ignoreEntity(entities=(
-            ImplantPart.vertices.getSequenceFromMask((
-            '[#66b34000 #80a0f #48000000 #70 ]', ), ), 
-            ImplantPart.edges.getSequenceFromMask((
-            '[#2ee40000 #943f583 #8 #0 #fa0ec150 #1 ]', ), )))
-        ImplantPart.restoreIgnoredEntity(entities=(
-            ImplantPart.ignoredEdges.getSequenceFromMask((
-            '[#8000107e ]', ), ), ))
-        ImplantPart.ignoreEntity(entities=(
-            ImplantPart.vertices.getSequenceFromMask((
-            '[#0:2 #100000 ]', ), ), 
-            ImplantPart.edges.getSequenceFromMask((
-            '[#0:3 #800000 ]', ), )))
-        
-        ImplantPart.seedPart(deviationFactor=0.125, 
-            minSizeFactor=0.1, size=EL_size)
-        ImplantPart.setMeshControls(elemShape=TET, regions=
-            ImplantPart.cells.getSequenceFromMask(('[#1 ]', ), ), 
-            technique=FREE)
-        ImplantPart.setElementType(regions=
-                (ImplantPart.cells.getSequenceFromMask(('[#1 ]', ), ), ),
-                elemTypes=(elemType1, elemType2,elemType3))
-        ImplantPart.generateMesh()
-        
-        
-        
-        #Create Surfaces & NodeSets
-        TIE_IC = ImplantPart.Surface(name='TIE_IC', side1Faces=
-            ImplantPart.faces.getSequenceFromMask(('[#e000000e #e3f ]', ), ))
-        SUP_IC = ImplantPart.Surface(name='SUP_IC', side1Faces=
-            ImplantPart.faces.getSequenceFromMask(('[#0 #400 ]',), ))
-        FLANK_IC = ImplantPart.Surface(name='FLANK_IC', side1Faces=
-            ImplantPart.faces.getSequenceFromMask(('[#8 #a3a ]',), ))
-        TIP_IC = ImplantPart.Surface(name='TIP_IC', side1Faces=
-            ImplantPart.faces.getSequenceFromMask(('[#e0000006 #5 ]', ), ))
-        
-        
-        
-        # Create Points
-        PtYNeg = ImplantPart.DatumPointByMidPoint(point1=
-            ImplantPart.vertices[41], point2=
-            ImplantPart.vertices[19])
-        
-        PtYPos = ImplantPart.DatumPointByMidPoint(point1=
-            ImplantPart.vertices[42], point2=
-            ImplantPart.vertices[31])
-        
-        PtMiddleImplant = ImplantPart.DatumPointByMidPoint(point1=
-            ImplantPart.datums[PtYPos.id], point2=
-            ImplantPart.datums[PtYNeg.id])
-        
-        
-        # Create Csys
-        CSysImplant = ImplantPart.DatumCsysByThreePoints(coordSysType=CARTESIAN
-            , name='CSysImplant', origin=ImplantPart.datums[PtMiddleImplant.id], 
-            point1=ImplantPart.InterestingPoint(
-            ImplantPart.edges[40], MIDDLE), point2=
-            ImplantPart.datums[PtYPos.id])
 
-
-    elif ImplantSize == 'S6' :
-        ImplantPart.ignoreEntity(entities=(
-            ImplantPart.vertices.getSequenceFromMask((
-            '[#d9ab5000 #80283 #784800 ]', ), ), 
-            ImplantPart.edges.getSequenceFromMask((
-            '[#c8010000 #250fc60 #8 #fc15000 #1f8 ]', ), )))
-            
-        ImplantPart.seedPart(deviationFactor=0.125, 
-            minSizeFactor=0.1, size=EL_size)
-        ImplantPart.setMeshControls(elemShape=TET, regions=
-            ImplantPart.cells.getSequenceFromMask(('[#1 ]', ), ), 
-            technique=FREE)
-        ImplantPart.setElementType(regions=
-                (ImplantPart.cells.getSequenceFromMask(('[#1 ]', ), ), ),
-                elemTypes=(elemType1, elemType2,elemType3))
-        ImplantPart.generateMesh()
-        
-        #Create Surfaces & NodeSets
-        TIE_IC = ImplantPart.Surface(name='TIE_IC', side1Faces=
-            ImplantPart.faces.getSequenceFromMask(('[#ff000007 #71 ]', ), ))
-        SUP_IC = ImplantPart.Surface(name='SUP_IC', side1Faces=
-            ImplantPart.faces.getSequenceFromMask(('[#0 #20 ]',), ))
-        FLANK_IC = ImplantPart.Surface(name='FLANK_IC', side1Faces=
-            ImplantPart.faces.getSequenceFromMask(('[#d0000004 #51 ]',), ))
-        TIP_IC = ImplantPart.Surface(name='TIP_IC', side1Faces=
-            ImplantPart.faces.getSequenceFromMask(('[#2f000003 ]', ), ))
-        
-        
-        # Create Points
-        PtYNeg = ImplantPart.DatumPointByMidPoint(point1=
-            ImplantPart.vertices[38], point2=
-            ImplantPart.vertices[16])
-        
-        PtYPos = ImplantPart.DatumPointByMidPoint(point1=
-            ImplantPart.vertices[39], point2=
-            ImplantPart.vertices[29])
-        
-        PtMiddleImplant = ImplantPart.DatumPointByMidPoint(point1=
-            ImplantPart.datums[PtYPos.id], point2=
-            ImplantPart.datums[PtYNeg.id])
-        
-        # Create Csys
-        CSysImplant = ImplantPart.DatumCsysByThreePoints(coordSysType=CARTESIAN
-            , name='CSysImplant', origin=ImplantPart.datums[PtMiddleImplant.id], 
-            point1=ImplantPart.InterestingPoint(
-            ImplantPart.edges[38], MIDDLE), point2=
-            ImplantPart.datums[PtYPos.id])
-            
-# =============================================================================
-#     Create associated set to the surfaces
-# =============================================================================
-    ELMTS = ImplantPart.cells[0].getElements()
-    ImplantPart.Set(elements=ELMTS, name='ES_ALL')
-    
-    
-    ImplantPart.Set(faces=TIE_IC.faces, name='GS_TIE_IC')
-    ImplantPart.Set(nodes=TIE_IC.nodes, name='NS_TIE_IC')
-    ImplantPart.Set(elements=TIE_IC.elements, name='ES_TIE_IC')
-    
-    ImplantPart.Set(faces=FLANK_IC.faces, name='GS_FLANK_IC')
-    ImplantPart.Set(nodes=FLANK_IC.nodes, name='NS_FLANK_IC')
-    ImplantPart.Set(elements=FLANK_IC.elements, name='ES_FLANK_IC')
-    
-    ImplantPart.Set(faces=SUP_IC.faces, name='GS_SUP_IC')
-    ImplantPart.Set(nodes=SUP_IC.nodes, name='NS_SUP_IC')
-    ImplantPart.Set(elements=SUP_IC.elements, name='ES_SUP_IC')
-    
-    ImplantPart.Set(faces=TIP_IC.faces, name='GS_TIP_IC')
-    ImplantPart.Set(nodes=TIP_IC.nodes, name='NS_TIP_IC')
-    ImplantPart.Set(elements=TIP_IC.elements, name='ES_TIP_IC')
-    
-    return
-#    return TIE_IC, SUP_IC, FLANK_IC, TIP_IC, CSysImplant, PtXPos, PtXNeg, PtMiddleImplant
-    
-
-def Mesh_CS_Sets_Surfs_Cement(CementPart,ImplantSize) :
-    from abaqus import *
-    from abaqusConstants import FREE,TET,STANDARD,C3D20R,C3D15,C3D10
-    import __main__
-    import section
-    import regionToolset
-    import part
-    import mesh
-    
-    EL_size = 1.5
-    
-    elemType1 = mesh.ElemType(elemCode=C3D20R, elemLibrary=STANDARD)
-    elemType2 = mesh.ElemType(elemCode=C3D15, elemLibrary=STANDARD)
-    elemType3 = mesh.ElemType(elemCode=C3D10, elemLibrary=STANDARD)
-    # =============================================================================
-#   For the Size 4 implants :  
-#     Merge edges that generated bad mesh and mesh the implant, then create a 
-#     Coordinate system on the prosthesis, finally create the surface that would 
-#     be interacting with the cement
-# =============================================================================
-    if ImplantSize == 'S4' :
-        ############
-        #S4#########
-        ############
-        # Ignore entities CEMENT_S4
-        CementPart.ignoreEntity(entities=(
-            CementPart.vertices.getSequenceFromMask((
-            '[#0 #a0000000 #7150c3 #20b6304 ]', ), ), 
-            CementPart.edges.getSequenceFromMask((
-            '[#0:2 #c0000000 #54226baf #40200000 #ba905 #2 ]', ), )))
-        CementPart.restoreIgnoredEntity(entities=(
-            CementPart.ignoredEdges.getSequenceFromMask((
-            '[#80000 ]', ), ), ))
-        CementPart.ignoreEntity(entities=(
-            CementPart.vertices.getSequenceFromMask((
-            '[#0:2 #c0000 ]', ), ), 
-            CementPart.edges.getSequenceFromMask((
-            '[#0:3 #8000000 ]', ), )))
-        
-        CementPart.ignoreEntity(entities=(
-            CementPart.vertices.getSequenceFromMask((
-            '[#c32dc810 #1800a267 ]', ), ), 
-            CementPart.edges.getSequenceFromMask((
-            '[#15840020 #241debe0 #180004d7 ]', ), )))
-
-        # MEsh
-        CementPart.seedPart(deviationFactor=0.125, 
-            minSizeFactor=0.1, size=EL_size)
-        CementPart.setMeshControls(elemShape=TET, regions=
-            CementPart.cells.getSequenceFromMask(('[#1 ]', ), ), 
-            technique=FREE)
-        CementPart.setElementType(regions=
-                (CementPart.cells.getSequenceFromMask(('[#1 ]', ), ), ),
-                elemTypes=(elemType1, elemType2,elemType3))
-        CementPart.generateMesh()
-        
-        # Surfaces Tie S4
-        TIE_CI = CementPart.Surface(name='TIE_CI', side1Faces=
-            CementPart.faces.getSequenceFromMask(('[#7ff8007 ]', ), ))
-        
-        SUP_CI = CementPart.Surface(name='SUP_CI', side1Faces=
-            CementPart.faces.getSequenceFromMask(('[#2000000 ]', ), ))
-        
-        FLANK_CI = CementPart.Surface(name='FLANK_CI', side1Faces=
-            CementPart.faces.getSequenceFromMask(('[#5f00004 ]', ), ))
-        
-        TIP_CI = CementPart.Surface(name='TIP_CI', side1Faces=
-            CementPart.faces.getSequenceFromMask(('[#f8003 ]', ), ))
-        
-        TIE_CT = CementPart.Surface(name='TIE_CT', side1Faces=
-            CementPart.faces.getSequenceFromMask(('[#f8007000 #7f ]', ), ))
-        SUP_CT = CementPart.Surface(name='SUP_CT', side1Faces=
-            CementPart.faces.getSequenceFromMask(('[#0 #2 ]', ), ))
-        FLANK_CT = CementPart.Surface(name='FLANK_CT', side1Faces=
-            CementPart.faces.getSequenceFromMask(('[#38002000 #59 ]', ), ))
-        TIP_CT = CementPart.Surface(name='TIP_CT', side1Faces=
-            CementPart.faces.getSequenceFromMask(('[#c0005000 #34 ]', ), ))
-        
-        
-        
-        ##########################
-        ########  S5  ############
-        ##########################
-    elif ImplantSize == 'S5' :
-        
-        # Ignore entities CEMENT_S5
-        CementPart.ignoreEntity(entities=(
-            CementPart.vertices.getSequenceFromMask((
-            '[#0:2 #715000 #20a2804 ]', ), ), 
-            CementPart.edges.getSequenceFromMask((
-            '[#0:2 #c0000000 #54226aaa #200000 #400bb967 #2 ]', ), )))
-        
-        CementPart.ignoreEntity(entities=(
-            CementPart.vertices.getSequenceFromMask((
-            '[#0:2 #c00000 ]', ), ), 
-            CementPart.edges.getSequenceFromMask((
-            '[#0:3 #80000000 ]', ), )))
-        
-        CementPart.ignoreEntity(entities=(
-            CementPart.vertices.getSequenceFromMask((
-            '[#c0000810 #1800a26f ]', ), ), 
-            CementPart.edges.getSequenceFromMask((
-            '[#a7840020 #246deae2 #180004d7 ]', ), )))
-        
-        CementPart.restoreIgnoredEntity(entities=(
-            CementPart.ignoredEdges.getSequenceFromMask((
-            '[#200000 ]', ), ), ))
-        
-        # MEsh
-        CementPart.seedPart(deviationFactor=0.125, 
-            minSizeFactor=0.1, size=EL_size)
-        CementPart.setMeshControls(elemShape=TET, regions=
-            CementPart.cells.getSequenceFromMask(('[#1 ]', ), ), 
-            technique=FREE)
-        CementPart.setElementType(regions=
-                (CementPart.cells.getSequenceFromMask(('[#1 ]', ), ), ),
-                elemTypes=(elemType1, elemType2,elemType3))
-        CementPart.generateMesh()
-        
-        # Surfaces Tie S5
-        TIE_CI = CementPart.Surface(name='TIE_CI', side1Faces=
-            CementPart.faces.getSequenceFromMask((
-            '[#3ff8007 ]', ), ))
-        SUP_CI = CementPart.Surface(name='SUP_CI', side1Faces=
-            CementPart.faces.getSequenceFromMask((
-            '[#1000000 ]', ), ))
-        FLANK_CI = CementPart.Surface(name='FLANK_CI', side1Faces=
-            CementPart.faces.getSequenceFromMask((
-            '[#2f00004 ]', ), ))
-        TIP_CI = CementPart.Surface(name='TIP_CI', side1Faces=
-            CementPart.faces.getSequenceFromMask((
-            '[#f8003 ]', ), ))
-        
-        TIE_CT = CementPart.Surface(name='TIE_CT', side1Faces=
-            CementPart.faces.getSequenceFromMask((
-            '[#fc007000 #1f ]', ), ))
-        SUP_CT = CementPart.Surface(name='SUP_CT', side1Faces=
-            CementPart.faces.getSequenceFromMask((
-            '[#0 #1 ]', ), ))
-        FLANK_CT = CementPart.Surface(name='FLANK_CT', side1Faces=
-            CementPart.faces.getSequenceFromMask((
-            '[#9c002000 #10 ]', ), ))
-        TIP_CT = CementPart.Surface(name='TIP_CT', side1Faces=
-            CementPart.faces.getSequenceFromMask((
-            '[#60005000 #e ]', ), ))
-        
-        
-        
-        ##########################
-        ########  S6  ############
-        ##########################
-    elif ImplantSize == 'S6' :
-        # Cement for S6
-        CementPart.ignoreEntity(entities=(
-            CementPart.vertices.getSequenceFromMask((
-            '[#c0000810 #9800a267 #715001 #20a2804 ]', ), ), 
-            CementPart.edges.getSequenceFromMask((
-            '[#a7840020 #242deae2 #d80004d7 #54226aab #200000 #400bb967 #2 ]', ), )))
-        
-        # Mesh
-        CementPart.seedPart(deviationFactor=0.125, 
-            minSizeFactor=0.1, size=1.0)
-        CementPart.setMeshControls(elemShape=TET, regions=
-            CementPart.cells.getSequenceFromMask(('[#1 ]', ), ), 
-            technique=FREE)
-        CementPart.setElementType(regions=
-                (CementPart.cells.getSequenceFromMask(('[#1 ]', ), ), ),
-                elemTypes=(elemType1, elemType2,elemType3))
-        CementPart.generateMesh()
-        
-        # Surfaces Tie S6
-        TIE_CI = CementPart.Surface(name='TIE_CI', side1Faces=
-            CementPart.faces.getSequenceFromMask(('[#3ff8007 ]', ), ))
-        SUP_CI = CementPart.Surface(name='SUP_CI', side1Faces=
-            CementPart.faces.getSequenceFromMask(( '[#1000000 ]', ), ))
-        FLANK_CI = CementPart.Surface(name='FLANK_CI', side1Faces=
-            CementPart.faces.getSequenceFromMask(( '[#2f00004 ]', ), ))
-        TIP_CI = CementPart.Surface(name='TIP_CI', side1Faces=
-            CementPart.faces.getSequenceFromMask(( '[#f8003 ]', ), ))
-        
-        TIE_CT = CementPart.Surface(name='TIE_CT', side1Faces=
-            CementPart.faces.getSequenceFromMask(( '[#fc007000 #1f ]', ), ))
-        SUP_CT = CementPart.Surface(name='SUP_CT', side1Faces=
-            CementPart.faces.getSequenceFromMask(( '[#0 #1 ]', ), ))
-        FLANK_CT = CementPart.Surface(name='FLANK_CT', side1Faces=
-            CementPart.faces.getSequenceFromMask(( '[#9c002000 #10 ]', ), ))
-        TIP_CT = CementPart.Surface(name='TIP_CT', side1Faces=
-            CementPart.faces.getSequenceFromMask(( '[#60005000 #e ]', ), ))
-                    
-                    
-    ##########################
-    #####  Generality  #######
-    ##########################
-    ### Generality
-    ## Create Geometry, Elements & Nodes Set corresponding to surfaces
-    
-    
-    
-    #Cement Implant Interfaces
-    CementPart.Set(faces=TIE_CI.faces, name='GS_TIE_CI')
-    CementPart.Set(nodes=TIE_CI.nodes, name='NS_TIE_CI')
-    CementPart.Set(elements=TIE_CI.elements, name='ES_TIE_CI')
-    
-    CementPart.Set(faces=FLANK_CI.faces, name='GS_FLANK_CI')
-    CementPart.Set(nodes=FLANK_CI.nodes, name='NS_FLANK_CI')
-    CementPart.Set(elements=FLANK_CI.elements, name='ES_FLANK_CI')
-    
-    CementPart.Set(faces=SUP_CI.faces, name='GS_SUP_CI')
-    CementPart.Set(nodes=SUP_CI.nodes, name='NS_SUP_CI')
-    CementPart.Set(elements=SUP_CI.elements, name='ES_SUP_CI')
-    
-    CementPart.Set(faces=TIP_CI.faces, name='GS_TIP_CI')
-    CementPart.Set(nodes=TIP_CI.nodes, name='NS_TIP_CI')
-    CementPart.Set(elements=TIP_CI.elements, name='ES_TIP_CI')
-    
-    
-    #Cement Tibia Interfaces
-    CementPart.Set(faces=TIE_CT.faces, name='GS_TIE_CT')
-    CementPart.Set(nodes=TIE_CT.nodes, name='NS_TIE_CT')
-    CementPart.Set(elements=TIE_CT.elements, name='ES_TIE_CT')
-    
-    CementPart.Set(faces=FLANK_CT.faces, name='GS_FLANK_CT')
-    CementPart.Set(nodes=FLANK_CT.nodes, name='NS_FLANK_CT')
-    CementPart.Set(elements=FLANK_CT.elements, name='ES_FLANK_CT')
-    
-    CementPart.Set(faces=SUP_CT.faces, name='GS_SUP_CT')
-    CementPart.Set(nodes=SUP_CT.nodes, name='NS_SUP_CT')
-    CementPart.Set(elements=SUP_CT.elements, name='ES_SUP_CT')
-    
-    CementPart.Set(faces=TIP_CT.faces, name='GS_TIP_CT')
-    CementPart.Set(nodes=TIP_CT.nodes, name='NS_TIP_CT')
-    CementPart.Set(elements=TIP_CT.elements, name='ES_TIP_CT')
-    
-    return
-#    return TIE_CI, SUP_CI, FLANK_CI, TIP_CI, TIE_CT, SUP_CT, FLANK_CT, TIP_CT
-
-    
 def getAllExtSFC(p,SET0=[]) :
     from abaqusConstants import S1,S2,S3,S4
     from collections import Counter
@@ -1087,48 +644,50 @@ def getElsetSectMat(mdl,p,prefix = 'SET_'):
     for m in  mdl.materials.keys():
         ElasticModulus = mdl.materials[m].elastic.table[0][0]
         EMod_Mat[ElasticModulus] = m
-        
-    
-    # Dict density -> Mat
-    
+            
     return [ES_Name_Labels, Sect_ES_Name, Mat_Sect, EMod_Mat ]
     
     
     
-def rhoFromE(E):
+def rhoFromE(E,law='Carter77'):
     # Get volumic mass from elastic modulus
-    paramE = dict()
-    paramE[1] = {'a' : 0 , 'b' : 15520 , 'c' : 1.93}
-    paramE[2] = {'a' : 0 , 'b' : 9965 , 'c' : 1.137}
-    paramE[3] = {'a' : 0 , 'b' : 10714 , 'c' : 0.74}
-    paramE['t1'] = 5280
-    paramE['t2'] = 12260
-    if E < paramE['t1'] :
-        i = 1
-    elif E > paramE['t2']:
-        i = 3
-    else :
-        i = 2
-    rho = ( (E-paramE[i]['a']) / paramE[i]['b'] )**(1/ paramE[i]['c'])
+    if law == 'Morgan2003' :
+        paramE = dict()
+        paramE[1] = {'a' : 0 , 'b' : 15520 , 'c' : 1.93}
+        paramE[2] = {'a' : 0 , 'b' : 9965 , 'c' : 1.137}
+        paramE[3] = {'a' : 0 , 'b' : 10714 , 'c' : 0.74}
+        paramE['t1'] = 5280
+        paramE['t2'] = 12260
+        if E < paramE['t1'] :
+            i = 1
+        elif E > paramE['t2']:
+            i = 3
+        else :
+            i = 2
+        rho = ( (E-paramE[i]['a'])/paramE[i]['b'] )**( 1./paramE[i]['c'] )
+    elif law == 'Carter77' :
+        rho = (E/3790.0)**(1.0/3.0)
     return rho
 
 def EFromRhoTBCMT(rho):
     # Get elastic modulus from volumic mass
-    BVTV = rho/2.1
-    E = 12000*BVTV    
+    # Parameters were fitted from micro-FE models
+    b = 6639
+    c = 0.7074
+    BVTV = rho/1.9
+    E = b*BVTV**c   
     return E
     
 def updateCreateElset(p,dict_Elset):
     #dict_Elset a dictionnary with Elset names as keys and a list of associated
     #   element labels as values
-    
     for es in dict_Elset.keys():
         if es in p.sets.keys():
             del p.sets[es]
         p.SetFromElementLabels(name = es , elementLabels = tuple(dict_Elset[es]))
         
 
-def assignMat2TBCMTLayer(p,ES_Layer,dict_E_Sect,elmt_EMod):
+def assignMat2TBCMTLayer(p,ES_Layer,dict_E_Sect,elmt_EMod,law='Carter77'):
     from abaqusConstants import MIDDLE_SURFACE,FROM_SECTION
     # dict_E_Sect # Dictionnary Elastic moudilus -> SectionName of CTMTB
     dict_E_Elmts = { E:[] for E in dict_E_Sect.keys()}
@@ -1221,8 +780,7 @@ def transformPt(pt,T):
     coorNp_trans = np.transpose(np.dot(T,coorNp))
     pt_transformed = [c for c in coorNp_trans[0][0:3]]
     return pt_transformed
-    
-            
+       
 def createCsysOnPartRA(p,O,X,Y,nameCsys):
     pt_origin = p.DatumPointByCoordinate(coords=tuple(O))
     pt_Xpos = p.DatumPointByCoordinate(coords=tuple(X))

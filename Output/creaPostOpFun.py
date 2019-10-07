@@ -21,7 +21,7 @@ import xyPlot
 import displayGroupOdbToolset as dgo
 import connectorBehavior
 
-def creaPostOpMdl(mdlName,nCPUs) :
+def creaPostOpMdl(mdlName,nCPUs,law) :
     import AbqsMdlFuns as MdlFuns
     cwd = os.getcwd()
     #=============================================================================#
@@ -258,7 +258,7 @@ def creaPostOpMdl(mdlName,nCPUs) :
     elmt_EMod = { el : E for E,Labels in EMod_Labels.iteritems() for el in Labels}
 
     # assign material to the layer elements
-    dict_E_Elmts_CMTTB = MdlFuns.assignMat2TBCMTLayer(tib,ES_LAYER_ALL,dict_E_Sect_TBCMT,elmt_EMod)
+    dict_E_Elmts_CMTTB = MdlFuns.assignMat2TBCMTLayer(tib,ES_LAYER_ALL,dict_E_Sect_TBCMT,elmt_EMod,law)
 
 
     #=============================================================================

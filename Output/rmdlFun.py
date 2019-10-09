@@ -172,7 +172,7 @@ def bone_remodeling(E, S, Sref, dt, law='Carter77') :
     # i : current state
     # ip1 : i+1 -> next step of forward euler scheme
     lz = 0.75 # Lazy zone coefficient -> Huiskes 1992
-    tau = 115 # remodelling rate
+    tau = 31.1 # remodelling rate [ for carter77 only ??? ]
     rho_i = rho_from_E(E,law)
     a = a_rho(rho_i, 'Adams2014') # Specific surface
     

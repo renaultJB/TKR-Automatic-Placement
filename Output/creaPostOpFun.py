@@ -365,8 +365,8 @@ def creaPostOpMdl(mdlName,nCPUs,law) :
         M_x, M_y, M_z =  list(SelectedMoments[stepName]*BW*1000.) #Convert to N.mm
 
 
-        if 'GC' in stepName :
-            #Adapt M_y to HKA:
+        if 'CU' not in stepName :
+            #Adapt M_y to HKA for single leg support activities :
             U = R_Implt.axis1.direction
             M_y = MdlFuns.M_y_from_MFR(F_z,Data['Alignment'],Data,Data['Pt_Med_Implt'],Data['Pt_Lat_Implt'],U)
 
@@ -414,7 +414,7 @@ def creaPostOpMdl(mdlName,nCPUs,law) :
     # Create job and write input and save models as .cae
     # =============================================================================
     jobName = mdl1.name[4:-3]+'_Op_0'
-    mdb.Job(name=jobName, model=mdl1.name, description='', 
+    mdb.Job(name=jobName+'_raw', model=mdl1.name, description='', 
         type=ANALYSIS, atTime=None, waitMinutes=0, waitHours=0, queue=None, 
         memory=90, memoryUnits=PERCENTAGE, getMemoryFromAnalysis=True, 
         explicitPrecision=SINGLE, nodalOutputPrecision=SINGLE, echoPrint=OFF, 
@@ -422,6 +422,104 @@ def creaPostOpMdl(mdlName,nCPUs,law) :
         scratch='', resultsFormat=ODB, multiprocessingMode=DEFAULT, numCpus=nCPUs, 
         numDomains=nCPUs, numGPUs=0)
 
-    mdb.jobs[jobName].writeInput(consistencyChecking=OFF)
+    mdb.jobs[jobName+'_raw'].writeInput(consistencyChecking=OFF)
+
+    # =============================================================================
+    # Correct input so that every material even if not assigned appears
+    # =============================================================================
+
+    # Get a dict of Bone_ES_El
+    inpText_raw = rmdl_funs.get_inp_text(mdlName_NoOp)
+    Dict_Mat_E = rmdl_funs.get_Mat_From_inp(inpText_raw,'MAT_')
+    dict_Elset = rmdl_funs.get_ES_From_inp(inpText_raw,'SET_')
+
+    Bone_ES_El = dict()
+    for mat in Dict_Mat_E.keys():
+        es = 'SET_'+mat.split('_')[1]
+        Bone_ES_El[es]= dict_Elset[es] if es in dict_Elset.keys() else []
+        
+        
+        
+    
+    ElementList = sorted([ el for k in dict_Elset.keys() for el in dict_Elset[k]])
+    dict_ELset_E, dict_Mat_Elset = rmdl_funs.get_ES2MAT_From_inp(inpText_raw,'MAT_','SET_',Dict_Mat_E)
+
+    
+
+    
+    pElset2 = re.compile('elset=('+elSetKeyword+'[0-9]+)',re.IGNORECASE)
+    pElset3 = re.compile('elset=('+'SECT_TB-PMMA'+'[0-9]+)',re.IGNORECASE)
+    name_rmdl = mdlName_short.replace('.', '_') +'_Op_'+ str(int(epoch+12*dt))                
+    fout = open(jobName + '.inp','w')
+    with open(jobName + '_raw.inp', 'r') as f:
+        writeLine = True
+        line=''
+        while not line.startswith('*Part, name=TIBIA') :
+            line = f.readline()
+            fout.write(line)
+
+        line = f.readline()
+        while pElset2.findall(line,re.I) or pElset3.findall(line,re.I) :
+            fout.write(line)
+            line = f.readline()
+
+        skipES = True
+        # Write all the ES of Bone and TBCMT
+        
+        for es, elmts in Bone_ES_El.items():
+            fout.write('*Elset, elset='+es+'\n')
+            if elmts :
+                #break elmts list
+                elmts = [str(el) for el in elmts]
+                elmts_chunk = [elmts[i:i + 10] for i in xrange(0, len(elmts), 10)]
+                for c in elmts_chunk:
+                    fout.write(', '.join(c)+'\n')
+            else :
+                fout.write('  \n')
+
+            
+
+
+
+
+
+
+        for line in f.readlines() :
+            
+            if '*' in line :
+                writeLine = True
+            if line.startswith('*Elset'):
+                elset = pElset2.findall(line,re.I)
+                elset3 = pElset3.findall(line,re.I)
+                fout.write(line)
+                if elset and rmdl_Bone_on:
+                    writeLine = False
+                    elmts = dict_Elset_Rmdl[elset[0].upper()]
+                    if elmts :
+                        #break elmts list
+                        elmts = [str(el) for el in elmts]
+                        elmts_chunk = [elmts[i:i + 10] for i in xrange(0, len(elmts), 10)]
+                        for c in elmts_chunk:
+                            fout.write(', '.join(c)+'\n')
+                    else :
+                        fout.write('  \n')
+                elif elset3 and rmdl_TBCMT_on :
+                    writeLine = False
+                    elmts = TBCMT_Elset_Rmdl[elset3[0].upper()]
+                    if elmts :
+                        #break elmts list
+                        elmts = [str(el) for el in elmts]
+                        elmts_chunk = [elmts[i:i + 10] for i in xrange(0, len(elmts), 10)]
+                        for c in elmts_chunk:
+                            fout.write(', '.join(c)+'\n')
+                    else :
+                        fout.write('  \n')
+            elif writeLine :
+                fout.write(line)
+            
+                
+    fout.close()
+    
+    
     mdb.saveAs(pathName=cwd+'/CAEs/'+jobName)
 

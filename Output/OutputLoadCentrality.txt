@@ -1,1 +1,0 @@
-subjectCode,LegSide,ImplantSize,Alignement,alpha,beta,CV,Min.Max,Min.Mean,mMPTA,TibialSlopeDia,TibialSlopeMech,Lsup,Lflank,Ltip,Ltot,Lshare,LTipCv,LTipStd,LTipMax,Mean.Distance,Wdth.Implt.ML,Wdth.Implt.AP,Wdth.Tib.ML,Wdth.Tib.AP,Ratio.AP,Ratio.ML,LoadStep,Epoch

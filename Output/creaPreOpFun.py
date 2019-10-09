@@ -402,8 +402,8 @@ def creaPreOpMdl(mdlName,nCPUs):
         F_x, F_y, F_z =  list(SelectedForces[stepName]*BW)
         M_x, M_y, M_z =  list(SelectedMoments[stepName]*BW*1000.) #Convert to N.mm
 
-        if 'GC' in stepName.upper() :
-            #Adapt M_y to HKA:
+        if 'CU' not in stepName.upper() :
+            #Adapt M_y to HKA for single leg support activities :
             U = R_TP.axis1.direction
             M_y = MdlFuns.M_y_from_MFR(F_z,'PreOp',Data,Data['Pt_LCC'],Data['Pt_MCC'],U)
         

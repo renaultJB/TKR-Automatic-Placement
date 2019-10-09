@@ -144,8 +144,8 @@ def CreateMaterialsSections(Mdl):
 #   DOI: 10.1002/jbm.b.31044
 
     dict_E_Sect = dict()
-    TB_PMMA_E = list(np.linspace(1.0, 330., num=250)**1.5)
-    TB_PMMA_E += list(np.linspace(6500., 19000., num=25))
+    TB_PMMA_E = list(np.linspace(1.0, 330., num=223)**1.5)
+    TB_PMMA_E += list(np.linspace(6500., 20000., num=28))
     for i,e in enumerate(TB_PMMA_E):
         Mdl.Material(name='TB-PMMA'+str(i))
         Mdl.materials['TB-PMMA'+str(i)].Elastic(table=((e, 0.3), ))
@@ -672,7 +672,7 @@ def rhoFromE(E,law='Carter77'):
 def EFromRhoTBCMT(rho):
     # Get elastic modulus from volumic mass
     # Parameters were fitted from micro-FE models
-    b = 6639
+    b = 6639.
     c = 0.7074
     BVTV = rho/1.9
     E = b*BVTV**c   

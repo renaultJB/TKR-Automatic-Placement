@@ -17,16 +17,15 @@ import math
 import re
 
 
-os.chdir(r'C:\Users\Doctorant\Documents\GitHub\TKR-Automatic-Placement\Output\INPs_WM')
+os.chdir(r'C:\Users\Doctorant\Documents\JB\INPs_WM')
 # cwd = os.getcwd() + '\\'
 #-----------------------------------------------------------------
 # Parameters
 matKeyword = 'MAT_'
 elSetKeyword = 'SET_'
 partName = 'TIBIA-1'
-nCPUs = 4
-rmdl_T = 0.40
-dt = 1./2.
+nCPUs = 8
+dt_list = [1./12, 1./6, 1./4, 0.5] + [0.5]*11 # 60 months of remodelling
 rmdl_Bone_on = True
 rmdl_TBCMT_on = True
 law = 'Carter77' # Carter77 or 'Morgan2003' # Rho to E law used in the models
@@ -141,7 +140,7 @@ for mdlName in mdlNames_WM :
 
     Sref_Equi = { el : np.mean(s) for el, s in Dict_Sref.items() }
 
-    while epoch < 10 :
+    for dt in  dt_list :
         name_curr = mdlName_short.replace('.', '_') +'_Op_'+ str(epoch)
         # Check if current epoch post Op analysis has already been executed, launched it otherwise
         if not os.path.isfile(name_curr+'.odb'):
@@ -165,7 +164,7 @@ for mdlName in mdlNames_WM :
             name_next = mdlName_short.replace('.', '_') +'_Op_'+ str(epoch+1)
             if os.path.isfile(name_next+'.inp') :
                 postOp.close()
-                epoch += 1
+                epoch += int(dt*12)
                 continue
             else :
                 Fields_Exist = True
@@ -346,7 +345,7 @@ for mdlName in mdlNames_WM :
                 Data_E_Mod = []
                 elmtData = []
                 
-                if not Fields_Exist :
+                if 'E_Mod' not in postOp.steps[stepName].frames[-1].fieldOutputs.keys() :
                     E_Mod = postOp.steps[stepName].frames[-1].FieldOutput(name='E_Mod',
                                     description='Elastic Modulus of material', type=SCALAR)
                 else :
@@ -356,8 +355,7 @@ for mdlName in mdlNames_WM :
                     Data_E_Mod.append((E,))
                     elmtData.append(el)
                     
-                if not Fields_Exist :
-                    E_MOD.addData(position=WHOLE_ELEMENT, instance=TibRA, labels=elmtData, data=Data_E_Mod)
+                E_MOD.addData(position=WHOLE_ELEMENT, instance=TibRA, labels=elmtData, data=Data_E_Mod)
         
         #-----------------------------------------------------------------
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -366,7 +364,7 @@ for mdlName in mdlNames_WM :
         #-----------------------------------------------------------------
         pElset2 = re.compile('elset=('+elSetKeyword+'[0-9]+)',re.IGNORECASE)
         pElset3 = re.compile('elset=('+'SECT_TB-PMMA'+'[0-9]+)',re.IGNORECASE)
-        name_rmdl = mdlName_short.replace('.', '_') +'_Op_'+ str(epoch+1)                
+        name_rmdl = mdlName_short.replace('.', '_') +'_Op_'+ str(int(epoch+12*dt))                
         fout = open(name_rmdl + '.inp','w')
         with open(name_curr + '.inp', 'r') as f:
             writeLine = True
@@ -406,7 +404,7 @@ for mdlName in mdlNames_WM :
         fout.close()
         postOp.save()
         postOp.close()
-        epoch += 1
+        epoch += int(dt*12)
 
     preOp.save()
     preOp.close()

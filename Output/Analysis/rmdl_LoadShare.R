@@ -16,7 +16,7 @@ Rmdl_11$LegSide <- as.factor(Rmdl_11$LegSide)
 Rmdl_11$ImplantSize <- as.factor(Rmdl_11$ImplantSize)
 Rmdl_11$alpha <- as.factor(Rmdl_11$alpha)
 Rmdl_11$Lshare100 <- 100*Rmdl_11$Lshare
-Rmdl_11$Rmdl.TBMCT <- rep("Yes",length(Rmdl_11$Lshare))
+Rmdl_11$Rmdl.TBCMT <- rep("Yes",length(Rmdl_11$Lshare))
 Rmdl_11$Rmdl.BONE <- rep("Yes",length(Rmdl_11$Lshare))
 Rmdl_11$Rmdl <- rep("Both",length(Rmdl_11$Lshare))
 
@@ -31,7 +31,7 @@ Rmdl_10$LegSide <- as.factor(Rmdl_10$LegSide)
 Rmdl_10$ImplantSize <- as.factor(Rmdl_10$ImplantSize)
 Rmdl_10$alpha <- as.factor(Rmdl_10$alpha)
 Rmdl_10$Lshare100 <- 100*Rmdl_10$Lshare
-Rmdl_10$Rmdl.TBMCT <- rep("No",length(Rmdl_10$Lshare))
+Rmdl_10$Rmdl.TBCMT <- rep("No",length(Rmdl_10$Lshare))
 Rmdl_10$Rmdl.BONE <- rep("Yes",length(Rmdl_10$Lshare))
 Rmdl_10$Rmdl <- rep("Both",length(Rmdl_10$Lshare))
 
@@ -46,30 +46,60 @@ Rmdl_10$Rmdl <- rep("Both",length(Rmdl_10$Lshare))
 ########################################################################################
 
 DF = rbind(Rmdl_11,Rmdl_10)
-DF$Rmdl.TBMCT <- as.factor(DF$Rmdl.TBMCT)
+DF$Rmdl.TBCMT <- as.factor(DF$Rmdl.TBCMT)
 DF$Rmdl.BONE <- as.factor(DF$Rmdl.BONE)
 DF$LoadStep <- as.factor(DF$LoadStep)
-DF$Mois <- as.factor(DF$Epoch)
+DF$Mois <- DF$Epoch
 DF$Alignement <- as.factor(DF$Alignement)
 revalue(DF$Alignement, c("Kine"="Cinématique", "Mech"="Mécanique")) -> DF$Alignement
 DF$Epoch <- as.numeric(DF$Epoch)
+DF$Align.Rmdl.TBCMT <- paste(DF$Alignement, "-",  DF$Rmdl.TBCMT)
+DF$Align.Rmdl.Bone <- paste(DF$Alignement, "-",  DF$Rmdl.BONE)
 DF <- subset(DF, Epoch<72 )
 
-########################################################################################
-### GENERAL PLOTS  , color = Step , color = SubjectCode
-########################################################################################
 
-#Varus
-pt <- ggplot(DF, aes(Epoch, Lshare100 , color = Alignement)) + 
-  geom_point(size=2) + theme_classic() +
-  stat_smooth(method = "lm", formula = y ~ x + I(x^2), size = 1, se=FALSE) +
-  xlab('Mois') +
-  ylab('Load Bypass (%)') + 
-  theme(axis.text=element_text(size=14), axis.title = element_text(size=20))
-
+DF_mean <- aggregate(Lshare100 ~ Mois + Alignement + Align.Rmdl.TBCMT, DF, FUN = 'mean')
+########################################################################################
+### Bar PLOTS  , color = Step , color = SubjectCode
+########################################################################################
 bar1 <- ggplot(DF, aes(x = Mois, y = Lshare100 , fill = Alignement)) + 
   geom_bar(stat="identity", position="dodge")+
   theme_classic() + xlab('Mois') + ylab('Load Bypass (%)') + 
   theme(axis.text=element_text(size=14), axis.title = element_text(size=20))
 
-bar1 + facet_grid(. ~ LoadStep)
+bar1 + facet_grid(Rmdl.TBMCT ~ LoadStep)
+
+bar_all <- ggplot(DF, aes(x = Mois, y = Lshare100 , fill = Align.Rmdl.TBCMT)) + 
+  geom_bar(stat="identity", position="dodge")+
+  theme_classic() + xlab('Mois') + ylab('Load Bypass (%)') + 
+  theme(axis.text=element_text(size=14), axis.title = element_text(size=20))
+bar_all + facet_grid(. ~ LoadStep)
+
+bar_all <- ggplot(DF_mean, aes(x = Mois, y = Lshare100 , fill = Align.Rmdl.TBCMT)) + 
+  geom_bar(stat="identity", position="dodge")+
+  theme_classic() + xlab('Mois') + ylab('Load Bypass (%)') + 
+  theme(axis.text=element_text(size=14), axis.title = element_text(size=20))
+bar_all
+
+
+########################################################################################
+### Point PLOTS  , color = Step , color = SubjectCode
+########################################################################################
+DF <- subset(DF, Epoch<72 & Epoch>-0.5   )
+DF$Mois <- as.numeric(DF$Mois) 
+DF_mean <- aggregate(Lshare100 ~ Mois + Alignement + Align.Rmdl.TBCMT + Rmdl.TBCMT, DF, FUN = 'mean')
+#Varus
+pt <- ggplot(DF_mean, aes(Mois, Lshare100 , color = Alignement, shape = Rmdl.TBCMT)) + 
+  geom_point(size=2) + theme_classic() +
+  geom_smooth(method = 'loess', se=FALSE) +
+  xlab('Mois') +
+  ylab('Load Bypass (%)') + 
+  theme(axis.text=element_text(size=14), axis.title = element_text(size=20))
+pt
+
+point_all <- ggplot(DF_mean, aes(x = Mois, y = Lshare100 , color = Align.Rmdl.TBCMT)) + 
+  geom_point(size=2) + theme_classic() +
+  geom_smooth(method = 'loess', se=FALSE) + 
+  theme_classic() + xlab('Mois') + ylab('Load Bypass (%)') + 
+  theme(axis.text=element_text(size=14), axis.title = element_text(size=20))
+point_all

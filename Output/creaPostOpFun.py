@@ -23,6 +23,7 @@ import connectorBehavior
 
 def creaPostOpMdl(mdlName,nCPUs,law) :
     import AbqsMdlFuns as MdlFuns
+    import rmdlFun as rmdl_funs
     cwd = os.getcwd()
     #=============================================================================#
     #-----------------------------------------------------------------------------#
@@ -423,33 +424,25 @@ def creaPostOpMdl(mdlName,nCPUs,law) :
         numDomains=nCPUs, numGPUs=0)
 
     mdb.jobs[jobName+'_raw'].writeInput(consistencyChecking=OFF)
+    mdb.saveAs(pathName=cwd+'/CAEs/'+jobName)
 
     # =============================================================================
     # Correct input so that every material even if not assigned appears
     # =============================================================================
-
     # Get a dict of Bone_ES_El
-    inpText_raw = rmdl_funs.get_inp_text(mdlName_NoOp)
-    Dict_Mat_E = rmdl_funs.get_Mat_From_inp(inpText_raw,'MAT_')
-    dict_Elset = rmdl_funs.get_ES_From_inp(inpText_raw,'SET_')
+    inpText_raw = rmdl_funs.get_inp_text(jobName+'_raw')
+    Dict_Mat_E = rmdl_funs.get_Mat_From_inp(inpText_raw,'TB-PMMA')
+    dict_Elset = rmdl_funs.get_ES_From_inp(inpText_raw,'SECT_TB-PMMA')
 
     Bone_ES_El = dict()
     for mat in Dict_Mat_E.keys():
-        es = 'SET_'+mat.split('_')[1]
+        es = 'SECT_'+mat
         Bone_ES_El[es]= dict_Elset[es] if es in dict_Elset.keys() else []
-        
-        
-        
-    
-    ElementList = sorted([ el for k in dict_Elset.keys() for el in dict_Elset[k]])
-    dict_ELset_E, dict_Mat_Elset = rmdl_funs.get_ES2MAT_From_inp(inpText_raw,'MAT_','SET_',Dict_Mat_E)
 
-    
-
-    
-    pElset2 = re.compile('elset=('+elSetKeyword+'[0-9]+)',re.IGNORECASE)
+    # Rewrite inp
     pElset3 = re.compile('elset=('+'SECT_TB-PMMA'+'[0-9]+)',re.IGNORECASE)
-    name_rmdl = mdlName_short.replace('.', '_') +'_Op_'+ str(int(epoch+12*dt))                
+    pSect3 = re.compile('Section: ('+'SECT_TB-PMMA'+'[0-9]+)',re.IGNORECASE)
+    formatSS = '** Section: SECT_{0}\n*Solid Section, elset=SECT_{0}, material={0}\n,\n'                 
     fout = open(jobName + '.inp','w')
     with open(jobName + '_raw.inp', 'r') as f:
         writeLine = True
@@ -457,15 +450,12 @@ def creaPostOpMdl(mdlName,nCPUs,law) :
         while not line.startswith('*Part, name=TIBIA') :
             line = f.readline()
             fout.write(line)
-
         line = f.readline()
-        while pElset2.findall(line,re.I) or pElset3.findall(line,re.I) :
+        while not pElset3.findall(line,re.I) :
             fout.write(line)
             line = f.readline()
-
-        skipES = True
-        # Write all the ES of Bone and TBCMT
-        
+            
+        # Write all the ES of TBCMT
         for es, elmts in Bone_ES_El.items():
             fout.write('*Elset, elset='+es+'\n')
             if elmts :
@@ -476,50 +466,31 @@ def creaPostOpMdl(mdlName,nCPUs,law) :
                     fout.write(', '.join(c)+'\n')
             else :
                 fout.write('  \n')
-
-            
-
-
-
-
-
-
-        for line in f.readlines() :
-            
+                
+        # Write all ES  that are not of TBCMT
+        while not pSect3.findall(line,re.I):
+            line = f.readline()
             if '*' in line :
                 writeLine = True
-            if line.startswith('*Elset'):
-                elset = pElset2.findall(line,re.I)
-                elset3 = pElset3.findall(line,re.I)
-                fout.write(line)
-                if elset and rmdl_Bone_on:
-                    writeLine = False
-                    elmts = dict_Elset_Rmdl[elset[0].upper()]
-                    if elmts :
-                        #break elmts list
-                        elmts = [str(el) for el in elmts]
-                        elmts_chunk = [elmts[i:i + 10] for i in xrange(0, len(elmts), 10)]
-                        for c in elmts_chunk:
-                            fout.write(', '.join(c)+'\n')
-                    else :
-                        fout.write('  \n')
-                elif elset3 and rmdl_TBCMT_on :
-                    writeLine = False
-                    elmts = TBCMT_Elset_Rmdl[elset3[0].upper()]
-                    if elmts :
-                        #break elmts list
-                        elmts = [str(el) for el in elmts]
-                        elmts_chunk = [elmts[i:i + 10] for i in xrange(0, len(elmts), 10)]
-                        for c in elmts_chunk:
-                            fout.write(', '.join(c)+'\n')
-                    else :
-                        fout.write('  \n')
+            if pElset3.findall(line,re.I):
+                writeLine = False
+                continue
             elif writeLine :
                 fout.write(line)
-            
                 
+        # Write all Solid Section of TBCMT
+        for mat in Dict_Mat_E:
+            fout.write(formatSS.format(mat))
+
+        # Copy the rest of the file except that the TBCMT Solid Section definition
+        i=2
+        for line in f.readlines() :
+            i += -1
+            if pSect3.findall(line,re.I):
+                i=2 # Solid section consist of 3 lines
+                continue
+            elif i<0 :
+                fout.write(line)
+    
     fout.close()
-    
-    
-    mdb.saveAs(pathName=cwd+'/CAEs/'+jobName)
 

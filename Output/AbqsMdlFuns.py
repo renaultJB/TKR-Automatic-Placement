@@ -693,7 +693,7 @@ def assignMat2TBCMTLayer(p,ES_Layer,dict_E_Sect,elmt_EMod,law='Carter77'):
     dict_E_Elmts = { E:[] for E in dict_E_Sect.keys()}
     E_CMTTB = sorted(dict_E_Sect.keys())
     for el in ES_Layer.elements:
-        rho = rhoFromE(elmt_EMod[el.label])
+        rho = rhoFromE( elmt_EMod[el.label], law)
         E = EFromRhoTBCMT(rho)
         Ebin = find_nearest(E_CMTTB,E)
         dict_E_Elmts[Ebin].append(el.label) 

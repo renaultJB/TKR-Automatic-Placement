@@ -58,7 +58,7 @@ DF$Align.Rmdl.Bone <- paste(DF$Alignement, "-",  DF$Rmdl.BONE)
 DF <- subset(DF, Epoch<72 )
 
 
-DF_mean <- aggregate(Lshare100 ~ Mois + Alignement + Align.Rmdl.TBCMT, DF, FUN = 'mean')
+DF_mean <- aggregate(Lshare100 ~ Mois + Alignement + Align.Rmdl.TBCMT + Rmdl.TBCMT, DF, FUN = 'mean')
 ########################################################################################
 ### Bar PLOTS  , color = Step , color = SubjectCode
 ########################################################################################
@@ -89,12 +89,13 @@ DF <- subset(DF, Epoch<72 & Epoch>-0.5   )
 DF$Mois <- as.numeric(DF$Mois) 
 DF_mean <- aggregate(Lshare100 ~ Mois + Alignement + Align.Rmdl.TBCMT + Rmdl.TBCMT, DF, FUN = 'mean')
 #Varus
-pt <- ggplot(DF_mean, aes(Mois, Lshare100 , color = Alignement, shape = Rmdl.TBCMT)) + 
-  geom_point(size=2) + theme_classic() +
+pt <- ggplot(DF_mean, aes(Mois, Lshare100 , color = Rmdl.TBCMT, shape = Alignement)) + 
+  geom_point(size=4) + theme_classic() +
   geom_smooth(method = 'loess', se=FALSE) +
   xlab('Mois') +
   ylab('Load Bypass (%)') + 
-  theme(axis.text=element_text(size=14), axis.title = element_text(size=20))
+  theme(axis.text=element_text(size=14), axis.title = element_text(size=20)) + 
+  
 pt
 
 point_all <- ggplot(DF_mean, aes(x = Mois, y = Lshare100 , color = Align.Rmdl.TBCMT)) + 

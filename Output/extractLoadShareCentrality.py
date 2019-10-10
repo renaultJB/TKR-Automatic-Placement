@@ -177,10 +177,9 @@ with open('OutputLoadCentrality.txt','w') as fCScore :
                     LoadShare['Max_Tip'] = np.max(Forces)
                     LoadShare['CV_Forces_Tip'] = LoadShare['STD_Forces_Tip']/np.mean(Forces)
 
-
-
-            #TibBrdrNS = MyOdb.rootAssembly.instances['TIBIA-1'].nodeSets['NS-CUT-BORDER']
-            #ImpltBrdrNS = MyOdb.rootAssembly.instances['IMPLT-1'].nodeSets['NS-PLATE-BORDER']
+            if not NoOp :
+                TibBrdrNS = MyOdb.rootAssembly.instances['TIBIA-1'].nodeSets['NS-CUT-BORDER']
+                ImpltBrdrNS = MyOdb.rootAssembly.instances['IMPLT-1'].nodeSets['NS-PLATE-BORDER']
             
 
             

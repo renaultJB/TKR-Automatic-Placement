@@ -56,7 +56,7 @@ NotOkODBFile.close()
 # =============================================================================
 # Open output file and write first line (Header)
 # =============================================================================
-with open('OutputLoadCentrality.txt','w') as fCScore :
+with open('OutputLoadCentrality.txt','a+') as fCScore :
     fCScore.write('{},{},{},{},{},{},'.format('subjectCode','LegSide','ImplantSize','Alignement','alpha','beta'))
     fCScore.write('{},{},{},{},{},{},'.format('CV','Min.Max','Min.Mean','mMPTA','TibialSlopeDia','TibialSlopeMech'))
     fCScore.write('{},{},{},{},{},{},{},{},'.format('Lsup','Lflank','Ltip','Ltot','Lshare','LTipCv','LTipStd','LTipMax'))

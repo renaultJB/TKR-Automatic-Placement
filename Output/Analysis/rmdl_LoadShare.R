@@ -20,6 +20,18 @@ Rmdl_11$Rmdl.TBCMT <- rep("Yes",length(Rmdl_11$Lshare))
 Rmdl_11$Rmdl.BONE <- rep("Yes",length(Rmdl_11$Lshare))
 Rmdl_11$Rmdl <- rep("Both",length(Rmdl_11$Lshare))
 
+
+
+
+
+
+Rmdl_11 <- subset(Rmdl_11, subjectCode == 'DES_R' )
+
+
+
+
+
+
 ########################################################################################
 ### Read data from remodelling of both bone only
 ########################################################################################
@@ -41,6 +53,11 @@ Rmdl_10$Rmdl <- rep("Both",length(Rmdl_10$Lshare))
 ########################################################################################
 # To be added ?
 
+
+
+
+
+
 ########################################################################################
 ### Merge DataSet
 ########################################################################################
@@ -57,8 +74,6 @@ DF$Align.Rmdl.TBCMT <- paste(DF$Alignement, "-",  DF$Rmdl.TBCMT)
 DF$Align.Rmdl.Bone <- paste(DF$Alignement, "-",  DF$Rmdl.BONE)
 DF <- subset(DF, Epoch<72 )
 
-
-DF_mean <- aggregate(Lshare100 ~ Mois + Alignement + Align.Rmdl.TBCMT + Rmdl.TBCMT, DF, FUN = 'mean')
 ########################################################################################
 ### Bar PLOTS  , color = Step , color = SubjectCode
 ########################################################################################
@@ -67,14 +82,18 @@ bar1 <- ggplot(DF, aes(x = Mois, y = Lshare100 , fill = Alignement)) +
   theme_classic() + xlab('Mois') + ylab('Load Bypass (%)') + 
   theme(axis.text=element_text(size=14), axis.title = element_text(size=20))
 
-bar1 + facet_grid(Rmdl.TBMCT ~ LoadStep)
+bar1 + facet_grid(Rmdl.TBCMT ~ LoadStep)
 
-bar_all <- ggplot(DF, aes(x = Mois, y = Lshare100 , fill = Align.Rmdl.TBCMT)) + 
+
+DF2 <- subset(DF, Rmdl.TBCMT = "Yes" )
+DF2$Epoch <- as.factor(DF2$Epoch)
+bar_all <- ggplot(DF2, aes(x = Epoch, y = Lshare100 , fill = Alignement)) + 
   geom_bar(stat="identity", position="dodge")+
-  theme_classic() + xlab('Mois') + ylab('Load Bypass (%)') + 
+  theme_classic() + xlab('Mois') + ylab('Fprop (%)') + 
   theme(axis.text=element_text(size=14), axis.title = element_text(size=20))
 bar_all + facet_grid(. ~ LoadStep)
 
+DF_mean <- aggregate(Lshare100 ~ Mois + Alignement + Align.Rmdl.TBCMT + Rmdl.TBCMT, DF, FUN = 'mean')
 bar_all <- ggplot(DF_mean, aes(x = Mois, y = Lshare100 , fill = Align.Rmdl.TBCMT)) + 
   geom_bar(stat="identity", position="dodge")+
   theme_classic() + xlab('Mois') + ylab('Load Bypass (%)') + 
@@ -93,9 +112,8 @@ pt <- ggplot(DF_mean, aes(Mois, Lshare100 , color = Rmdl.TBCMT, shape = Aligneme
   geom_point(size=4) + theme_classic() +
   geom_smooth(method = 'loess', se=FALSE) +
   xlab('Mois') +
-  ylab('Load Bypass (%)') + 
-  theme(axis.text=element_text(size=14), axis.title = element_text(size=20)) + 
-  
+  ylab('Fprop (%)') + 
+  theme(axis.text=element_text(size=14), axis.title = element_text(size=20))
 pt
 
 point_all <- ggplot(DF_mean, aes(x = Mois, y = Lshare100 , color = Align.Rmdl.TBCMT)) + 

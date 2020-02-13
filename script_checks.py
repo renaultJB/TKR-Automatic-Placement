@@ -39,7 +39,7 @@ def find_ProsthFiles(directory,Pname,Ptype,CmtOnly=False):
     prosthType = 'Prosthesis'+str(Ptype)
     if CmtOnly :
         filesPref = ['Cut_','Implant'+str(Ptype)]
-        suffix = '_simple.stp' 
+        suffix = '.stp' 
     else :
         filesPref = ['C_','Cut_','Implant'+str(Ptype)]
         suffix = '.stp'

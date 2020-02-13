@@ -1,5 +1,0 @@
-open a cmd prompt as admin and execute the following commands :
-cd C:\Program Files\MATLAB\R2016a\extern\engines\python
-python setup.py install
-_______________________
-https://fr.mathworks.com/help/matlab/matlab_external/install-the-matlab-engine-for-python.html

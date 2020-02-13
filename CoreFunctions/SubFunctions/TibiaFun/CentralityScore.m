@@ -1,11 +1,10 @@
-function [ CentralityScore, T ] = CentralityScore(ProxTib, Prosth0, Prosth, StemTip, LegSide)
+function [ CentralityScore, T ] = CentralityScore(ProxTib, Prosth0, Prosth, StemTip)
 % CENTRALITYSCORE evaluate the centrality of the stem tip relative to the 
 % Tibial Bone
 
 %% 1st Identify the ring of the the stem tip
 
-IdElmtsOk = find(Prosth0.faceNormal*[0 0 -LegSide]'< 0.985 &...
-    Prosth0.faceNormal*[0 0 -LegSide]' > 0.18 &...
+IdElmtsOk = find(Prosth0.faceNormal*[0 0 1]'< -0.98 &...
     Prosth0.incenter*[0 0 1]' < 0.951 * StemTip(3));
 
 Ring = TriReduceMesh(Prosth,IdElmtsOk);
@@ -15,19 +14,27 @@ Ring = TriReduceMesh(Prosth,IdElmtsOk);
 %% 2nd identify a layer of the proxTibia at the same altitude
 RingPts = Ring.Points;
 
-[n,d] = LS_Plan(RingPts);
+[x0,n] = lsplane(RingPts);
 
-IdElmtsOk =  find(abs(ProxTib.incenter*n+(d+1)) <3);
+figure(90)
+trisurf(ProxTib,'FaceAlpha',0.5);
+hold on
+axis equal
+plotPlan(n,x0,RingPts)
+
+d=x0*n;
+IdElmtsOk =  find(ProxTib.incenter*n  <  + (d+1)  );
 
 ProxTibLayer = TriReduceMesh(ProxTib,IdElmtsOk);
 
 ProxTibLayerPts = ProxTibLayer.Points;
 
-
-
-
-
-
+figure(90)
+trisurf(ProxTib,'FaceAlpha',0.5);
+hold on
+axis equal
+trisurf(Ring);
+pl3t(ProxTibLayerPts,'r*')
 %% Compute the paired points closest distance
 
 

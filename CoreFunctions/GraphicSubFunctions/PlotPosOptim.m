@@ -1,8 +1,14 @@
-function PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, Nxp, R_xp, LegSide, d_xp, CS, PtMedialThirdOfTT, Boundary_xp )
+function PlotPosOptim( ProxTib, Prosthesis0, history, Start_Point, Oxp, U_xp, V_xp, R_xp, CS, PtMiddleOfTT, Boundary_xp, TI_speTransfo)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
+%% reGenerate some data to avoid passing to many argument to function
+
+Nxp = R_xp(:,3);
+
+
 
 %% Remove ProxTib elements that are above the cut line
+
 ElemtsOk = find(ProxTib.incenter*Nxp < Oxp*Nxp);
 ProxTibCutted = TriReduceMesh(ProxTib,ElemtsOk);
 [ProxTibCutted, HolePtsProj]  = TriFillPlanarHoles( ProxTibCutted, 1);
@@ -22,8 +28,11 @@ PtsTibPts0 = transpose(Ttib*PtsTibPts');
 PtsTibPts0(:,4)=[];
 
 
-PtMedialThirdOfTT = transpose(Ttib*[PtMedialThirdOfTT';1]);
-PtMedialThirdOfTT(4)=[];
+PtMiddleOfTT = transpose(Ttib*[PtMiddleOfTT';1]);
+PtMiddleOfTT(4)=[];
+
+
+%Transform R_implant :
 
 % figure(200)
 % trisurf(ProxTibCutted,'Facecolor',[0.65    0.65    0.6290],'FaceAlpha',0.75,'edgecolor','none'); % 0.8,0.8,0.85
@@ -78,7 +87,7 @@ for i = 1 : length(history)
     PtsProsth0 = Prosthesis0.Points;
     PtsProsth0(:,4) = ones(length(PtsProsth0),1);
     
-    T = zeros(4,4); T(1:3,1:3) = Rp*R_xp*[0 LegSide 0 ; LegSide 0 0; 0 0 -1]; %[0 LegSide 0 ; 1 0 0; 0 0 -1]
+    T = zeros(4,4); T(1:3,1:3) = Rp*R_xp*TI_speTransfo; %[0 LegSide 0 ; 1 0 0; 0 0 -1]
     T(:,4)=[ProthOrig';1];
     
     
@@ -101,7 +110,7 @@ for i = 1 : length(history)
     light('Position',[300 300 -100],'Style','local')
     %     plotDot( PtMedialThirdOfTT, 'r', 2 )
     trisurf(ProsthesisEnd,'Facecolor','g','FaceAlpha',1,'edgecolor','none');
-    plotDot( PtMedialThirdOfTT, 'r', 2 )
+    plotDot( PtMiddleOfTT, 'r', 1.5 )
     hold on
     grid off
     axis off
@@ -121,7 +130,7 @@ for i = 1 : length(history)
     light('Position',[-500 500 -100],'Style','local')
     %     plotDot( PtMedialThirdOfTT, 'r', 2 )
     trisurf(ProsthesisEnd,'Facecolor','g','FaceAlpha',1,'edgecolor','none');
-    plotDot( PtMedialThirdOfTT, 'r', 2 )
+    plotDot( PtMiddleOfTT, 'r', 2 )
 %     plotCylinder( [0; 0; 1], 0.75, [0, 0, 0], 20,  1,'k')
     plotCylinder( [0; 0; 1], 0.75, [0, 0, -80], 190,  1,'k')
     
@@ -145,7 +154,7 @@ for i = 1 : length(history)
     light('Position',[-500 500 -100],'Style','local')
     %     plotDot( PtMedialThirdOfTT, 'r', 2 )
     trisurf(ProsthesisEnd,'Facecolor','g','FaceAlpha',1,'edgecolor','none');
-    plotDot( PtMedialThirdOfTT, 'r', 2 )
+    plotDot( PtMiddleOfTT, 'r', 2 )
     plotCylinder( [0; 0; 1], 0.75, [0, 0, -80], 190,  1,'k')
     hold on
     grid off

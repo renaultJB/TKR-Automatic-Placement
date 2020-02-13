@@ -80,7 +80,8 @@ def find_ProsthFile(directory,Pname,Ptype):
     
     files_list = []
     prosthType = 'Prosthesis'+str(Ptype)
-    Pname = 'Implant' + str(Ptype) + '_'+ Pname + '.msh'
+    PnameMSH = 'Implant' + str(Ptype) + '_'+ Pname + '.msh'
+    PnameSTL = 'Implant' + str(Ptype) + '_'+ Pname + '.stl'
     for path, subdirs, files in os.walk(directory):
         for name in files:
             files_list.append(os.path.join(path, name))
@@ -91,14 +92,27 @@ def find_ProsthFile(directory,Pname,Ptype):
 #            print("A file found")
 #            A.append(fdir)
 #    ## prosthType in fdir and
-    A = [fdir for fdir in files_list  if prosthType in fdir and Pname in fdir]
+    A = [fdir for fdir in files_list  if prosthType in fdir and PnameMSH in fdir]
+    B = [fdir for fdir in files_list  if prosthType in fdir and PnameSTL in fdir]
+
+    if A :
+        C = A
+    elif B :
+        C = B
+    else :
+        print('File not found')
+        print('Currently looking from: ' + directory)
+        print(PnameMSH + ' or ' + PnameSTL)
+
+
+    
 #    print(Pname)
 #    print(prosthType)
 #    print(directory)
 #    print(os.getcwd())
 #    ## print(files_list)
 #    print(A)
-    mshFile = str(A[0])
+    mshFile = str(C[0])
 #    print(mshFile)
     return mshFile
 

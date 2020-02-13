@@ -116,6 +116,15 @@ elseif((nargin==4) && (nargout==1)) % mimic ver. 1.0 functionality
    find_in_out = true;
 end
 
+
+% Remove last point in case of closed polygon instead of a polyline
+if abs(xv(1)-xv(end)) + abs(yv(1)-yv(end)) < 10^-6
+    xv(end)=[];
+    yv(end)=[];
+    %warning('Last Point Removed')
+end
+    
+
 % number of points and number of vertices in polyline
 nv = length(xv);
 np = length(xp);

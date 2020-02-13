@@ -13,7 +13,8 @@ function [ PtMedialThirdOfTT, LegSide, PtsMedThird, PtsTT, PtMiddleOfTT ] = Tibi
 %   - Proxtib : Triangulation object representing the tibia bone
 %   - CS : A structure of the constructed coordinate system associated to 
 %          the tibia bone
-%   - plots : a boolean, '1' to plot results, '0' to not plot
+%   - plots : a code, '2' to plot local and global results, 
+%             '1' to plot only global results, '0' no plot
 %
 %   Outputs:
 %   - PtMedialThirdOfTT : A point on the original mesh that is between the
@@ -35,7 +36,7 @@ j=0;
 % Variable to handle the distance between the end of the diaphysis to the
 % start of the epiphysis. Area where the Tibial Tuberosity is thought to be
 % located
-AltitudesFract = 0 : 0.1 : 0.5;
+AltitudesFract = -0.1 : 0.1 : 0.4;
 
 PtsMedThird = zeros(length(AltitudesFract),3);
 PtsMid = zeros(length(AltitudesFract),3);
@@ -47,8 +48,10 @@ for xAlt = AltitudesFract
     
     % Find the border of the Proximal Tibia at the altitude xAlt along the
     % Tibia Z axis
-    Curve = TriPlanIntersect(ProxTib,CS.Z,(xAlt*CS.AltStartEpiph+(1-xAlt)*CS.AltEndDiaph));
+    Curve = TriPlanIntersect(ProxTib,CS.Z,-(xAlt*CS.AltStartEpiph+(1-xAlt)*CS.AltEndDiaph));
     CSPts0 = Curve.Pts;
+    
+    % Move the intersection in the Tibia Coordinate Frame
     CSPtsRt = transpose(CS.V'*CSPts0');
     [ Centroid, ~ ] = PlanPolygonCentroid3D( CSPtsRt );
     
@@ -90,15 +93,16 @@ for xAlt = AltitudesFract
     % Test the most the least flat side(higher sigma value of gaussian fit)
     if fitresultPos.c1 < fitresultNeg.c1
         IDX0 = knnsearch(CSPtsRtC0,[fitresultPos.a1 fitresultPos.b1 0]);
-        LegSide = 'R' ;
+        LegSide = 'R';
     else
         IDX0 = knnsearch(CSPtsRtC0,[-fitresultNeg.a1 fitresultNeg.b1 0]);
-        LegSide = 'L' ;
+        LegSide = 'L';
     end
     
     PtTT0 = CSPtsRtC0(IDX0,:);
     PtTT00 = PtTT0;
     UTT0 =  PtTT0'/norm(PtTT0);
+    
     
     
     PtsOnTT0 = unique(CSPtsRtC0(CSPtsRtC0*UTT0>0.925*norm(PtTT0),:),'rows');
@@ -139,13 +143,15 @@ for xAlt = AltitudesFract
     UTT = PtTT'/norm(PtTT);
     
     % Identify the medial third of the Tibial Tuberosity :
-    % Make it lateral to medial like for the Tibia CS
+    % Make it medial to lateral like for the Tibia CS
     VTT = [UTT(2) -UTT(1) 0]'; VTT = sign(VTT(2))*VTT;
     [~,IMedialPt] = max(PtsOnTT*VTT);
     [~,ILateralPt] = min(PtsOnTT*VTT);
     
-    MedialThirdOfTT = 1/3*PtsOnTT(ILateralPt,:) + 2/3*PtsOnTT(IMedialPt,:);
-    MiddleOfTT = 1/2*PtsOnTT(ILateralPt,:) + 1/2*PtsOnTT(IMedialPt,:);
+    % The iditified region is a bit too lateral so the result are shift
+    % medially a bit
+    MedialThirdOfTT = 0.3*PtsOnTT(ILateralPt,:) + 0.7*PtsOnTT(IMedialPt,:);
+    MiddleOfTT = 0.5*PtsOnTT(ILateralPt,:) + 0.5*PtsOnTT(IMedialPt,:);
     
     LineEndingOfTT = PtsOnTT(IMedialPt,:)-PtsOnTT(ILateralPt,:);
     VLineEndingOfTT = LineEndingOfTT'/norm(LineEndingOfTT);
@@ -158,7 +164,7 @@ for xAlt = AltitudesFract
     [~,IDMiddle] = min(abs(bsxfun(@minus,PtsOnTT,MiddleOfTT)*VLineEndingOfTT));
     PtMiddleofTT = PtsOnTT(IDMiddle,:);
     
-    if plots ==1
+    if plots >=2
         % Plot fits with data.
         %     figure( 'Name', 'FitParts' );
         %     h = plot( fitresultNeg, xDataNeg, yDataNeg );
@@ -191,11 +197,13 @@ end
 
 IDPtMedialThird = knnsearch(ProxTib.Points,mean(PtsMedThird));
 PtMedialThirdOfTT = ProxTib.Points(IDPtMedialThird,:);
+% PtMedialThirdOfTT = mean(PtsMedThird);
 
 IDPtMiddle = knnsearch(ProxTib.Points,mean(PtsMid));
 PtMiddleOfTT = ProxTib.Points(IDPtMiddle,:);
+% PtMiddleOfTT = mean(PtsMid);
 
-if plots ==1
+if plots >=1
     figure()
     trisurf(ProxTib,'Facecolor',[0.65    0.65    0.6290],...
             'FaceAlpha',1,'edgecolor','none'); % 0.8,0.8,0.85
@@ -203,10 +211,13 @@ if plots ==1
     axis equal
     light('Position',CS.Origin' + 300*CS.Y + 200*CS.X,'Style','local')
     light('Position',CS.Origin' + 200*CS.Y - 200*CS.X,'Style','local')
+    light('Position',CS.Origin' - 200*CS.Y - 200*CS.X,'Style','local')
+    light('Position',CS.Origin' - 200*CS.Y + 200*CS.X,'Style','local')
     light('Position',CS.Origin' + 50*CS.Y + 50*CS.X - 500*CS.Z,'Style','local')
-    plotDot( PtsMedThird, 'r', 1.25 )
+    plotDot( PtsMedThird, 'r', 1 )
     plotDot( PtMedialThirdOfTT, 'g', 2.5 )
-    plotDot( PtsTT, 'b', 1.25 )
+    plotDot( PtMiddleOfTT, 'k', 2.5 )
+    plotDot( PtsTT, 'b', 1 )
     hold on
     grid off
     lighting gouraud
